@@ -2,7 +2,7 @@
   <q-page class="flex">
     <q-header>
       <q-toolbar>
-        <q-toolbar-title> Travel Agent </q-toolbar-title>
+        <q-toolbar-title> Travel Agent Gad Elnekave </q-toolbar-title>
       </q-toolbar>
       <q-tabs
         v-model="tab"
