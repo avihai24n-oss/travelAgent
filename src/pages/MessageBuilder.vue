@@ -1,142 +1,190 @@
 <template>
-  <q-page class="flex">
-    <q-header>
-      <q-toolbar>
-        <q-toolbar-title> Travel Agent Gad Elnekave </q-toolbar-title>
+  <q-page class="page-wrapper">
+    <!-- Header -->
+    <q-header class="modern-header">
+      <q-toolbar class="toolbar-main">
+        <q-toolbar-title class="app-title">
+          <span class="title-icon">&#9992;</span>
+          Travel Agent Gad Elnekave
+        </q-toolbar-title>
+        <q-toggle
+          v-model="darkMode"
+          dark
+          color="amber"
+          icon="brightness_6"
+          size="sm"
+        />
       </q-toolbar>
       <q-tabs
         v-model="tab"
-        class="bg-teal text-white shadow-2 full-width"
+        class="header-tabs"
         narrow-indicator
         dense
+        active-color="white"
+        indicator-color="white"
         align="justify"
       >
-        <q-tab class="text-white" name="info" icon="info" label="info" />
-        <q-tab
-          @click="onPreview"
-          class="text-black"
-          name="preview"
-          icon="preview"
-          label="preview"
-        />
+        <q-tab name="info" icon="edit" label="Build" no-caps />
+        <q-tab @click="onPreview" name="preview" icon="visibility" label="Preview" no-caps />
       </q-tabs>
     </q-header>
 
-    <div v-if="tab === 'info'" class="full-width">
-      <section class="q-mt-xl">
-        <div class="flex q-px-sm">
+    <!-- BUILD TAB -->
+    <div v-if="tab === 'info'" class="content-area">
+      <!-- Contact -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-icon">&#128222;</span>
+          <span>Contact</span>
+        </div>
+        <div class="section-body row-flex">
           <q-input
-            :style="{ 'margin-right': contactListApiSupported ? '20px' : '' }"
-            style="flex: 1"
-            class="q-mb-md"
             v-model="data.whatsappNumber"
-            label="contact WhatsApp"
-          />
+            label="WhatsApp Number"
+            outlined
+            dense
+            class="flex-grow"
+          >
+            <template v-slot:prepend>
+              <q-icon name="phone" color="grey-6" />
+            </template>
+          </q-input>
           <q-btn
             v-if="contactListApiSupported"
-            style="height: 50px"
             color="primary"
             icon="contacts"
+            flat
+            round
             @click="selectFromPhoneContactList()"
           />
         </div>
-        <h5
-          class="bg-secondary text-white text-center q-mt-xl q-py-sm q-mb-lg"
-          style="opacity: 0.73"
-        >
-          travelers
-        </h5>
-        <div
-          style="overflow-x: auto; flex: nowrap; display: flex; max-width: 100%"
-          class="items-center q-px-sm"
-        >
-          <div
-            class="q-mr-md"
-            v-for="(traveler, idx) in data.travelers"
-            :key="idx"
-          >
+      </div>
+
+      <!-- Travelers -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-icon">&#128100;</span>
+          <span>Travelers</span>
+        </div>
+        <div class="section-body">
+          <div class="travelers-scroll">
             <div
-              style="min-width: 160px; position: relative"
-              class="flex space-between"
+              v-for="(traveler, idx) in data.travelers"
+              :key="idx"
+              class="traveler-chip"
             >
-              <h6 class="q-mb-none">Traveler {{ idx + 1 }}</h6>
-              <q-btn
-                style="font-size: 9px; right: 13px; position: absolute"
-                round
-                v-if="idx !== 0"
-                color="primary"
-                icon="cancel"
-                @click="onRemoveTraveler(idx)"
+              <div class="traveler-chip-header">
+                <span class="traveler-label">Traveler {{ idx + 1 }}</span>
+                <q-btn
+                  v-if="idx !== 0"
+                  icon="close"
+                  flat
+                  round
+                  dense
+                  size="xs"
+                  color="negative"
+                  @click="onRemoveTraveler(idx)"
+                />
+              </div>
+              <q-input
+                v-model="data.travelers[idx].name"
+                label="Name"
+                outlined
+                dense
+                class="q-mb-xs"
+              />
+              <q-select
+                v-model="data.travelers[idx].type"
+                :options="TRAVELER_TYPES"
+                emit-value
+                label="Type"
+                outlined
+                dense
               />
             </div>
-            <q-input
-              class="q-mb-md"
-              v-model="data.travelers[idx].name"
-              label="name"
-            />
-            <q-select
-              class="q-mb-md"
-              filled
-              v-model="data.travelers[idx].type"
-              emit-value
-              :options="TRAVELER_TYPES"
-              label="Filled"
+            <q-btn
+              icon="add"
+              color="primary"
+              round
+              size="sm"
+              class="add-traveler-btn"
+              @click="onAddTraveler"
             />
           </div>
-          <q-btn
-            style="height: 35px; width: 35px"
-            color="primary"
-            icon="add"
-            @click="onAddTraveler"
+        </div>
+      </div>
+
+      <!-- Amadeus Code -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-icon">&#9992;</span>
+          <span>Amadeus Code</span>
+        </div>
+        <div class="section-body">
+          <q-input
+            v-model="data.smartAmadeusCode"
+            outlined
+            dense
+            autogrow
+            placeholder="Paste Amadeus PNR code here..."
+            type="textarea"
+            class="amadeus-input"
+          />
+          <q-input
+            v-if="selectedLang === 'he'"
+            v-model="ticketIssuanceDeadline"
+            outlined
+            dense
+            label="מועד אחרון להנפקה (לדוגמה: יום א׳ 10 אוג׳ | 21:00)"
+            class="q-mt-sm"
+            dir="rtl"
           />
         </div>
-      </section>
-      <h5
-        class="bg-secondary text-white text-center q-py-sm q-mb-lg"
-        style="opacity: 0.73; margin-top: 48px"
-      >
-        amadeus code
-      </h5>
-      <div class="q-px-sm">
-        <h6 class="q-mb-sm">Smart Amadeus</h6>
-        <q-input
-          class="q-mb-lg"
-          v-model="data.smartAmadeusCode"
-          filled
-          autogrow
-          placeholder="Smart Amadeus code"
-        />
       </div>
-      <q-tabs
-        v-model="selectedTemplateTab"
-        inline-label
-        class="q-mt-xl bg-purple text-white shadow-2"
-      >
-        <q-tab name="All" label="All" />
-        <q-tab name="Multi tickets" label="Multi tickets" />
-        <q-tab name="Family fare" label="Family fare" />
-      </q-tabs>
-      <section class="">
-        <div
-          class=""
-          v-for="(items, boxName, idx) in formStructure"
-          :key="boxName"
-        >
-          <h5
-            class="bg-secondary text-white text-center q-py-sm q-mb-lg"
-            style="opacity: 0.73"
-            :style="{ 'margin-top': idx === 0 ? '' : '48px' }"
+
+      <!-- Template Tabs -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-icon">&#128196;</span>
+          <span>Template</span>
+        </div>
+        <div class="section-body">
+          <q-tabs
+            v-model="selectedTemplateTab"
+            inline-label
+            dense
+            no-caps
+            class="template-tabs"
+            active-color="primary"
+            indicator-color="primary"
           >
-            {{ boxName }}
-          </h5>
+            <q-tab name="All" label="All" />
+            <q-tab name="Multi tickets" label="Multi tickets" />
+            <q-tab name="Family fare" label="Family fare" />
+          </q-tabs>
+        </div>
+      </div>
+
+      <!-- Dynamic Form Sections -->
+      <div
+        v-for="(items, boxName) in formStructure"
+        :key="boxName"
+        class="section-card"
+      >
+        <div class="section-header">
+          <span class="section-icon" v-if="boxName === 'prices'">&#128176;</span>
+          <span class="section-icon" v-else>&#9881;</span>
+          <span>{{ boxName }}</span>
+        </div>
+        <div class="section-body">
           <div
-            v-if="checkIfDisplay(boxName, item)"
-            class="q-mt-md q-px-sm"
             v-for="(item, index) in items"
             :key="item"
-            :class="[index === 0 ? 'q-mt-md' : 'q-mt-xl']"
+            v-if="checkIfDisplay(boxName, item)"
+            class="form-group"
+            :class="{ 'form-group-first': index === 0 }"
           >
-            <h6>{{ item }}</h6>
+            <div class="form-group-label">{{ item }}</div>
             <div
               v-for="(option, optionName) in data[boxName][item]"
               :key="optionName"
@@ -147,21 +195,21 @@
                     !option.hide &&
                     checkIfDisplaySubInput(optionName)
                 "
-                class="q-mt-sm"
                 v-model.number="option.value"
                 type="number"
-                filled
+                outlined
+                dense
                 :label="option.label"
-                style="max-width: 200px"
-                :class="[option.subInput ? 'q-ml-md q-mt-sm' : '']"
+                class="form-field"
+                :class="{ 'sub-field': option.subInput }"
               />
-
               <q-select
                 v-else-if="
                   option.type === 'selectMultiple' &&
                     checkIfDisplaySubInput(optionName)
                 "
-                filled
+                outlined
+                dense
                 :type="option.type"
                 v-model="option.selected"
                 multiple
@@ -171,21 +219,22 @@
                     ? `${optionName} Multiple selection`
                     : 'Multiple selection'
                 "
-                style="max-width: 400px"
-                :class="[option.subInput ? 'q-ml-md q-mt-sm' : '']"
+                class="form-field"
+                :class="{ 'sub-field': option.subInput }"
                 emit-value
               />
               <q-select
                 v-else-if="
                   option.type === 'select' && checkIfDisplaySubInput(optionName)
                 "
-                filled
+                outlined
+                dense
                 :type="option.type"
                 v-model="option.selected"
                 :options="option.options"
                 label="Select"
-                style="max-width: 400px"
-                :class="[option.subInput ? 'q-ml-md q-mt-sm' : '']"
+                class="form-field"
+                :class="{ 'sub-field': option.subInput }"
                 emit-value
               />
               <q-option-group
@@ -195,38 +244,70 @@
                 :options="option.options"
                 :type="option.type"
                 v-model="option.selected"
+                class="form-field"
               />
             </div>
           </div>
         </div>
-      </section>
-      <h5
-        class="bg-secondary text-white text-center q-py-sm q-mb-lg"
-        style="opacity: 0.73; margin-top: 48px"
-      >
-        Language
-      </h5>
+      </div>
 
-      <q-option-group :options="LANGS" type="radio" v-model="selectedLang" />
+      <!-- Language Selection -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-icon">&#127760;</span>
+          <span>Preview Language</span>
+        </div>
+        <div class="section-body">
+          <q-btn-toggle
+            v-model="selectedLang"
+            no-caps
+            rounded
+            unelevated
+            toggle-color="primary"
+            color="white"
+            text-color="primary"
+            :options="[
+              { label: 'English', value: 'en' },
+              { label: 'French', value: 'fr' },
+              { label: 'Hebrew', value: 'he' }
+            ]"
+            class="lang-toggle"
+          />
+        </div>
+      </div>
     </div>
-    <div class="full-width q-mt-xl q-px-sm" v-else>
-      <q-input
-        :style="{ direction: selectedLang === 'he' ? 'rtl' : 'ltr' }"
-        rows="20"
-        placeholder="preview"
-        v-model="whatsappMessage"
-        filled
-        type="textarea"
-      />
-      <q-btn
-        @click="onRedirectToWhatsapp"
-        class="full-width q-mt-sm"
-        color="accent"
-        icon-right="send"
-        label="send"
-      />
+
+    <!-- PREVIEW TAB -->
+    <div v-else class="content-area">
+      <div class="section-card preview-card">
+        <div class="section-header">
+          <span class="section-icon">&#128172;</span>
+          <span>WhatsApp Message Preview</span>
+        </div>
+        <div class="section-body">
+          <div class="preview-bubble" :class="{ 'rtl': selectedLang === 'he' }">
+            <q-input
+              :style="{ direction: selectedLang === 'he' ? 'rtl' : 'ltr' }"
+              v-model="whatsappMessage"
+              filled
+              type="textarea"
+              autogrow
+              class="preview-textarea"
+            />
+          </div>
+          <q-btn
+            @click="onRedirectToWhatsapp"
+            class="send-btn"
+            unelevated
+            no-caps
+            color="positive"
+            icon="send"
+            label="Send to WhatsApp"
+            size="md"
+          />
+        </div>
+      </div>
     </div>
-    <q-toggle v-model="darkMode" color="black" label="Dark mode" />
   </q-page>
 </template>
 
@@ -246,6 +327,7 @@ import {
 
 import messageMixin from "./messageMixin";
 import { LocalStorage } from "quasar";
+import { airports } from "src/assets/iata";
 
 export default {
   mixins: [messageMixin],
@@ -264,11 +346,6 @@ export default {
         whatsappNumber: null,
         travelers: [{ name: "", type: "adult" }],
         smartAmadeusCode: "",
-        //         `  2  DL 033 G 11DEC 1*LHRATL HK1  1550 2040  11DEC  E  DL/JNIPB5
-        // 3  DL2960 W 11DEC 1*ATLECP HK1  2300 2306  11DEC  E  DL/JNIPB5
-        // 4  DL2315 Z 17DEC 7*ECPATL HK1  0931 1140  17DEC  E  DL/JNIPB5
-        // 5  DL1384 Z 17DEC 7*ATLAUS HK1  1243 1413  17DEC  E  DL/JNIPB5
-        // 6  DL5934 Z 17DEC 7*AUSLHR HK1  1805 0920  18DEC  E  DL/JNIPB5`,
         journey: [],
         classOfTravel: "",
         firstDepart: null,
@@ -276,7 +353,8 @@ export default {
       },
       previewTxt: "",
       whatsappMessage: "",
-      darkMode: false
+      darkMode: false,
+      ticketIssuanceDeadline: ""
     };
   },
   created() {
@@ -297,9 +375,10 @@ export default {
       );
     },
     onPreview() {
-      let flightsTxt, otherTravelers;
+      let flightsTxt, otherTravelers, heTicketSelected, heDeadline;
 
       this.data.journey = [];
+      this.data.journeyCodes = {};
       this.data.classOfTravel = "";
 
       flightsTxt = this.getAmadeusTranslate(this.data.smartAmadeusCode);
@@ -309,37 +388,80 @@ export default {
         .map(traveler => this.capitalizeFirstLetter(traveler.name))
         .join(", ");
 
-      // *${this.$t("prices")}:* \n${this.priceDetails} \n\n
+      heTicketSelected = this.$t(this.data.prices["​ticket issuance"]["​ticket issuance"].selected);
+      heDeadline = this.ticketIssuanceDeadline;
 
       switch (this.selectedTemplateTab) {
         case "All":
-          this.whatsappMessage = `*${this.capitalizeFirstLetter(
-            this.data.travelers[0].name
-          )}*, ${this.$t("shalom")}\n\n${this.getRelevantTxtStructure(
-            "opening"
-          )}\n\n*${this.$t("itinerary")}* ${
-            this.data.details.itinerary.itinerary.selected
-          } \n${flightsTxt} ${this.ticketingOptionsTxt}
+          if (this.selectedLang === "he") {
+            this.whatsappMessage =
+`*${this.capitalizeFirstLetter(this.data.travelers[0].name)}*, ${this.$t("shalom")}
+⏰ *נא את אישורך להנפקת כרטיסך❗*
+👈${heTicketSelected}${heDeadline ? '\n👈' + heDeadline : ''}
+
+${this.getRelevantTxtStructure("opening")}
+
+*מסלול הטיסות* 🌍
+${flightsTxt}
+
+*${this.$t("airline")} (XX) ✈️*
+*xx*
+
+*${this.$t("class of travel")} 💺*
+*${this.$t(this.data.classOfTravel) || "XX"}*
+
+*${this.$t("airfare")}*💳
+${this.airfareTxt}
+
+${this.$t("attention")}
+* יש לאשר את הכרטוס היום עד השעה ${heDeadline || "XX"} ❗
+${this.$t("price may change")}
+
+${this.$t("baggage")}
+${this.baggageList}
+
+${this.$t("seat selection")}
+
+⚠️ ${this.$t("restrictions")} ⚠️
+${this.$t("change")} ${this.changeFeeValue}
+${this.$t("cancel")} ${this.data.prices["cancel fee"].cancelFee.value}${this.selectedCurrency}
+${this.$t("no show")} ${this.noShowValue}
+
+*${this.$t("ticket issuance")}*⌛
+⏰*${heTicketSelected}*‼️${heDeadline ? '\n👈*' + heDeadline + '*' : ''}
+
+${this.$t("please pay again msg")}
+
+${this.$t("farewell")}`;
+          } else {
+            this.whatsappMessage = `*${this.capitalizeFirstLetter(
+              this.data.travelers[0].name
+            )}*, ${this.$t("shalom")}\n\n${this.getRelevantTxtStructure(
+              "opening"
+            )}\n\n*${this.$t("itinerary")}* ${
+              this.data.details.itinerary.itinerary.selected
+            } \n${flightsTxt} ${this.ticketingOptionsTxt}
 *${this.$t("airline")}* (XX) ✈️\n  *xx*, *xx* & *xx*\n
 *${this.$t("class of travel")} 💺*\n  ${this.$t("compartment options")} \n
 *${this.$t("airfare")} 💲* \n${this.airfareTxt}\n\n${this.$t("baggage")} 🧳 ${
-            this.baggageList
-          } \n\n${this.$t("seat selection")}\n${this.mealTxt}\n${this.$t(
-            "attention"
-          )}\n${this.$t("price may change")} \n
+              this.baggageList
+            } \n\n${this.$t("seat selection")}\n${this.mealTxt}\n${this.$t(
+              "attention"
+            )}\n${this.$t("price may change")} \n
 ⚠️${this.$t("restrictions")}⚠️ \n${this.$t("change")} ${
-            this.changeFeeValue
-          } ${this.$t("p. p.")}\n${this.$t("cancel")} ${
-            this.data.prices["cancel fee"].cancelFee.value
-          }${this.selectedCurrency} ${this.$t("p. p.")} \n${this.$t(
-            "no show"
-          )} ${this.noShowValue} ${this.$t("p. p.")} \n*${this.$t(
-            "ticket issuance"
-          )}:*\n      *${this.$t(
-            this.data.prices["​ticket issuance"]["​ticket issuance"].selected
-          )}*\n${this.$t("p. p. = per person")} \n\n${this.$t(
-            "please pay again msg"
-          )} \n\n${this.$t("farewell")}`;
+              this.changeFeeValue
+            } ${this.$t("p. p.")}\n${this.$t("cancel")} ${
+              this.data.prices["cancel fee"].cancelFee.value
+            }${this.selectedCurrency} ${this.$t("p. p.")} \n${this.$t(
+              "no show"
+            )} ${this.noShowValue} ${this.$t("p. p.")} \n*${this.$t(
+              "ticket issuance"
+            )}:*\n      *${this.$t(
+              this.data.prices["​ticket issuance"]["​ticket issuance"].selected
+            )}*\n${this.$t("p. p. = per person")} \n\n${this.$t(
+              "please pay again msg"
+            )} \n\n${this.$t("farewell")}`;
+          }
           break;
 
         case "Multi tickets":
@@ -419,13 +541,13 @@ export default {
       } else if (this.selectedLang === "he") {
         switch (part) {
           case "opening":
-            return `${this.$t("flight desc")} *${this.journeyTxt}* ${
+            return `${this.$t("flight desc")} *(👤${this.capitalizeFirstLetter(this.data.travelers[0].name)})* הקרובה ל*${this.journeyTxt}*${
               this.data.travelers.length > 1 ? `\nעם ${this.allNamesTxt}` : ""
-            }\n\n${this.$t("please pay msg")} `;
+            }\n\n${this.$t("please pay msg")}`;
           case "priceDetails":
-            return `  ${this.data.prices.price[first].value}${
+            return `${this.data.prices.price[first].value}${
               this.selectedCurrency
-            } * ${this.travelersTypeAmountMap[first]} ${this.$t(first)} \n`;
+            } * ${this.travelersTypeAmountMap[first]} ${this.$t(first)}\n`;
 
           default:
             return part;
@@ -539,18 +661,21 @@ export default {
       }
     },
     baggageList() {
+      var sep = this.$i18n.locale === "he" ? "\n" : "\n ";
+      var prefix = this.$i18n.locale === "he" ? "\n✅ " : "\n ";
       return (
-        "\n " +
+        prefix +
         this.data.details.baggage.baggage.selected
           .map(baggage => this.$t(baggage))
-          .join(",\n ")
+          .join(this.$i18n.locale === "he" ? "\n✅ " : ",\n ")
       );
     },
     priceDetails() {
       let priceTxt = ``;
       for (const key in this.travelersTypeAmountMap) {
         if (this.$i18n.locale === "he") {
-          priceTxt += this.getRelevantTxtStructure("priceDetails", key);
+          var count = this.travelersTypeAmountMap[key];
+          priceTxt += `👈 *${this.data.prices.price[key].value}${this.selectedCurrency} ${this.$t(key)}${count > 1 ? ' x' + count : ''}*\n`;
         } else {
           priceTxt += `  ${this.travelersTypeAmountMap[key]} ${this.$t(
             key
@@ -619,7 +744,16 @@ export default {
       );
 
       uniqeDestinations.forEach((place, idx) => {
-        txt += `${this.$t(place)}${
+        var name = place;
+        if (this.$i18n.locale === "he" && this.data.journeyCodes && this.data.journeyCodes[place]) {
+          var code = this.data.journeyCodes[place];
+          if (airports[code] && airports[code].CityNameHe) {
+            name = airports[code].CityNameHe;
+          }
+        } else {
+          name = this.$t(place);
+        }
+        txt += `${name}${
           idx < uniqeDestinations.length - 1 ? ", " : ""
         }`;
       });
@@ -692,8 +826,16 @@ export default {
     selectedLang: {
       handler(lang) {
         this.$i18n.locale = lang;
+        if (this.tab === 'preview') {
+          this.onPreview();
+        }
       },
       immediate: true
+    },
+    tab(newTab) {
+      if (newTab === 'preview') {
+        this.onPreview();
+      }
     },
     "data.travelers": {
       handler(travelers) {
@@ -723,20 +865,251 @@ export default {
   }
 };
 </script>
+
 <style lang="scss" scoped>
-.sep {
-  height: 10px;
-  border-radius: 2px;
-  margin: 36px 0 !important;
+.page-wrapper {
+  padding-top: 100px;
+  padding-bottom: 32px;
+  min-height: 100vh;
+  background: #f5f7fa;
 }
 
+body.body--dark .page-wrapper {
+  background: #121212;
+}
+
+/* Header */
+.modern-header {
+  background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toolbar-main {
+  padding: 4px 16px;
+  min-height: 48px;
+}
+
+.app-title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.title-icon {
+  margin-right: 8px;
+  font-size: 20px;
+}
+
+.header-tabs {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Content */
+.content-area {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Section Cards */
+.section-card {
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+body.body--dark .section-card {
+  background: #1e1e1e;
+}
+
+.section-header {
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #1a73e8;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: capitalize;
+}
+
+body.body--dark .section-header {
+  border-bottom-color: #333;
+  color: #8ab4f8;
+}
+
+.section-icon {
+  font-size: 18px;
+}
+
+.section-body {
+  padding: 16px;
+}
+
+/* Row flex for contact */
+.row-flex {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flex-grow {
+  flex: 1;
+}
+
+/* Travelers */
+.travelers-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  align-items: flex-start;
+}
+
+.traveler-chip {
+  min-width: 170px;
+  max-width: 200px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 12px;
+  flex-shrink: 0;
+}
+
+body.body--dark .traveler-chip {
+  background: #2a2a2a;
+}
+
+.traveler-chip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.traveler-label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #555;
+}
+
+body.body--dark .traveler-label {
+  color: #bbb;
+}
+
+.add-traveler-btn {
+  flex-shrink: 0;
+  margin-top: 24px;
+}
+
+/* Amadeus */
+.amadeus-input {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+}
+
+/* Template tabs */
+.template-tabs {
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+body.body--dark .template-tabs {
+  background: #2a2a2a;
+}
+
+/* Form groups */
+.form-group {
+  margin-top: 16px;
+  &.form-group-first {
+    margin-top: 0;
+  }
+}
+
+.form-group-label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+  text-transform: capitalize;
+}
+
+body.body--dark .form-group-label {
+  color: #aaa;
+}
+
+.form-field {
+  max-width: 100%;
+  margin-top: 6px;
+}
+
+.sub-field {
+  margin-left: 16px;
+}
+
+/* Language toggle */
+.lang-toggle {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+body.body--dark .lang-toggle {
+  border-color: #444;
+}
+
+/* Preview */
+.preview-card {
+  min-height: 300px;
+}
+
+.preview-bubble {
+  background: #e7ffdb;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  position: relative;
+
+  &.rtl {
+    direction: rtl;
+  }
+}
+
+body.body--dark .preview-bubble {
+  background: #1a3a2a;
+}
+
+.preview-textarea {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.preview-textarea ::v-deep .q-field__control {
+  background: transparent !important;
+}
+
+.preview-textarea ::v-deep .q-field__native {
+  color: #111;
+}
+
+body.body--dark .preview-textarea ::v-deep .q-field__native {
+  color: #e0e0e0;
+}
+
+.send-btn {
+  width: 100%;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 600;
+}
+
+/* Dark mode heading fix */
 body.body--dark {
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
+  h1, h2, h3, h4, h5, h6 {
     color: white;
   }
 }

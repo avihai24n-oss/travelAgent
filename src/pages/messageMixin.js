@@ -123,7 +123,14 @@ const messageMixin = {
                 : line.destAirport
               : line.destAirport;
 
-          txt += `\n${this.prefixFlight}${line.airline} - *${
+          var flightPrefix = this.$i18n.locale === 'he' ? '' : this.prefixFlight;
+          var flightDash = this.$i18n.locale === 'he' ? ' – ' : ' - ';
+          var classLine = this.$i18n.locale === 'he' ? '' : ('\n' + this.$t(this.$t(line.flightClass)));
+
+          var isHe = this.$i18n.locale === 'he';
+          var sp = isHe ? '' : ' ';
+
+          txt += `\n${flightPrefix}${line.airline}${flightDash}*${
             line.flightNumber
           }* \n${departAirport} ${
             line.departAirport === "Tel Aviv"
@@ -131,7 +138,7 @@ const messageMixin = {
               : `(${line.departAirportCode}) ${this.directionEmoji} `
           }${destAirport} ${
             line.destAirport === "Tel Aviv" ? "" : `(${line.destAirportCode})`
-          } \n${this.$t(`${this.$t(line.flightClass)}`)} \n ${this.$t(
+          }${classLine}\n${sp}${this.$t(
             "dpt."
           )} ${this.$t(`${line.departDay}`)}${this.getRightSpaceAlignment(
             line.departDay
@@ -139,13 +146,13 @@ const messageMixin = {
             line.departMonth
           )}${this.getRightSpaceAlignment(line.departMonth)} ${
             line.departTime
-          }  \n ${this.$t("arr.")}  ${this.$t(
+          }\n${sp}${this.$t("arr.")} ${this.$t(
             `${line.destDay}`
           )}${this.getRightSpaceAlignment(line.destDay)} ${
             line.destDateNumberStr
           } ${this.$t(line.destMonth)}${this.getRightSpaceAlignment(
             line.destMonth
-          )} ${line.destTime}\n   ${this.$t("seat number")} \n`;
+          )} ${line.destTime}\n${this.$t("seat number")}\n`;
 
           if (24 < hoursDifference) {
             if (way.includes(this.$t("inbound flight"))) {
@@ -180,6 +187,9 @@ const messageMixin = {
         index.lookupByIataCode(line.departAirportCode).city
       );
       this.data.journey.push(index.lookupByIataCode(line.destAirportCode).city);
+      if (!this.data.journeyCodes) this.data.journeyCodes = {};
+      this.data.journeyCodes[index.lookupByIataCode(line.departAirportCode).city] = line.departAirportCode;
+      this.data.journeyCodes[index.lookupByIataCode(line.destAirportCode).city] = line.destAirportCode;
       line.departAirport = `${
         index.lookupByIataCode(line.departAirportCode).city
       }`;
