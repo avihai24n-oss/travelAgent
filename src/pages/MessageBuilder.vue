@@ -7,6 +7,16 @@
           <span class="title-icon">&#9992;</span>
           Travel Agent Gad Elnekave
         </q-toolbar-title>
+        <q-btn
+          flat
+          round
+          dense
+          icon="settings"
+          color="white"
+          size="sm"
+          aria-label="Admin"
+          @click="$router.push('/admin')"
+        />
         <q-toggle
           v-model="darkMode"
           dark
@@ -161,6 +171,7 @@
             <q-tab name="All" label="All" />
             <q-tab name="Multi tickets" label="Multi tickets" />
             <q-tab name="Family fare" label="Family fare" />
+            <q-tab name="Custom" label="My Template" icon="edit" />
           </q-tabs>
         </div>
       </div>
@@ -328,6 +339,7 @@ import {
 import messageMixin from "./messageMixin";
 import { LocalStorage } from "quasar";
 import { airports } from "src/assets/iata";
+import { loadTemplate } from "src/assets/defaultTemplates.js";
 
 export default {
   mixins: [messageMixin],
@@ -497,6 +509,10 @@ ${this.$t("farewell")}`;
           )} \n\n${this.$t("farewell")}`;
           break;
 
+        case "Custom":
+          this.whatsappMessage = this.buildFromCustomTemplate(flightsTxt);
+          break;
+
         default:
           break;
       }
@@ -516,6 +532,47 @@ ${this.$t("farewell")}`;
           ""
         );
       }
+    },
+    buildFromCustomTemplate(flightsTxt) {
+      const langKey = this.selectedLang;
+      const tpl = loadTemplate("flight", langKey);
+      if (!tpl) return "";
+
+      const customerName = this.capitalizeFirstLetter(
+        this.data.travelers[0].name || ""
+      );
+      const allNames =
+        this.data.travelers.length > 1 && this.allNamesTxt
+          ? this.allNamesTxt
+          : "";
+      const cancelFee = this.data.prices["cancel fee"].cancelFee.value;
+      const ticketIssuance = this.$t(
+        this.data.prices["​ticket issuance"]["​ticket issuance"].selected
+      );
+      const classTxt = this.$t(this.data.classOfTravel) || "XX";
+
+      const values = {
+        CUSTOMER_NAME: customerName,
+        ALL_NAMES: allNames,
+        GREETING: this.$t("shalom"),
+        DESTINATION: this.journeyTxt,
+        FLIGHTS: flightsTxt,
+        AIRLINE_NAME: "xx",
+        AIRLINE_CODE: "XX",
+        CLASS: classTxt,
+        PRICE: this.airfareTxt,
+        CURRENCY: this.selectedCurrency,
+        BAGGAGE: this.baggageList,
+        CHANGE_FEE: this.changeFeeValue,
+        CANCEL_FEE: cancelFee,
+        NO_SHOW: this.noShowValue,
+        TICKET_ISSUANCE: ticketIssuance,
+        FAREWELL: this.$t("farewell")
+      };
+
+      return tpl.replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
+        values[key] !== undefined ? values[key] : m
+      );
     },
     getRelevantTxtStructure(part, first, second) {
       if (this.selectedLang === "en") {
