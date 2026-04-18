@@ -168,6 +168,41 @@ const messageMixin = {
         return txt;
       } else return "";
     },
+    getParsedFlights(linesString) {
+      if (!linesString || !linesString.length) return [];
+      const out = [];
+      linesString.split("\n").forEach(raw => {
+        const splited = this.getSplittedLine(raw);
+        if (!splited || splited.length < 11) return;
+        const airlineCode = splited[1];
+        if (!airlines.filter(a => a.IATA === airlineCode)[0]) return;
+        try {
+          const line = this.getSplitedLineDetails(splited);
+          if (!line) return;
+          line.airlineCode = airlineCode;
+          const flightAirport =
+            this.selectedLang === "he"
+              ? airports[line.departAirportCode] &&
+                airports[line.departAirportCode].CityNameHe
+                ? airports[line.departAirportCode].CityNameHe
+                : line.departAirport
+              : line.departAirport;
+          const flightDestAirport =
+            this.selectedLang === "he"
+              ? airports[line.destAirportCode] &&
+                airports[line.destAirportCode].CityNameHe
+                ? airports[line.destAirportCode].CityNameHe
+                : line.destAirport
+              : line.destAirport;
+          line.departAirportLocal = flightAirport;
+          line.destAirportLocal = flightDestAirport;
+          out.push(line);
+        } catch (e) {
+          // skip malformed lines
+        }
+      });
+      return out;
+    },
     getSplitedLineDetails(splitedLine) {
       if (!splitedLine) return;
       let line = {},
@@ -176,9 +211,10 @@ const messageMixin = {
 
       latterOfclassOfTravel = splitedLine[3];
       line.flightClass = this.setClassOfTravel(latterOfclassOfTravel);
-      line.airline = airlines.filter(item => {
+      const airlineMatch = airlines.filter(item => {
         return item.IATA === splitedLine[1];
-      })[0].name;
+      })[0];
+      line.airline = airlineMatch ? airlineMatch.name : splitedLine[1];
       line.flightNumber = `${splitedLine[1]}${splitedLine[2]}`;
       dayNumber = splitedLine[5];
       line.departAirportCode = splitedLine[6].slice(0, 3);
