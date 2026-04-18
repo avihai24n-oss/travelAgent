@@ -23,6 +23,7 @@
     </q-header>
 
     <div v-if="tab === 'info'" class="full-width">
+      <h1 style="background:red;color:white;text-align:center;padding:30px;font-size:60px;margin:0">TEST</h1>
       <section class="q-mt-xl">
         <div class="flex q-px-sm">
           <q-input
