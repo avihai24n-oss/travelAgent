@@ -3,16 +3,6 @@
     <q-header>
       <q-toolbar>
         <q-toolbar-title> Travel Agent Gad Elnekave </q-toolbar-title>
-        <q-btn
-          flat
-          dense
-          round
-          icon="settings"
-          to="/admin"
-          aria-label="Admin"
-        >
-          <q-tooltip>עריכת תבניות</q-tooltip>
-        </q-btn>
       </q-toolbar>
       <q-tabs
         v-model="tab"
@@ -125,7 +115,6 @@
         <q-tab name="All" label="All" />
         <q-tab name="Multi tickets" label="Multi tickets" />
         <q-tab name="Family fare" label="Family fare" />
-        <q-tab name="Custom" label="My Template" icon="edit" />
       </q-tabs>
       <section class="">
         <div
@@ -257,7 +246,6 @@ import {
 
 import messageMixin from "./messageMixin";
 import { LocalStorage } from "quasar";
-import { loadTemplate } from "src/assets/defaultTemplates.js";
 
 export default {
   mixins: [messageMixin],
@@ -387,10 +375,6 @@ export default {
           )} \n\n${this.$t("farewell")}`;
           break;
 
-        case "Custom":
-          this.whatsappMessage = this.buildFromCustomTemplate(flightsTxt);
-          break;
-
         default:
           break;
       }
@@ -456,56 +440,6 @@ export default {
       if (this.selectedTemplateTab === "All") return true;
       if (!tempalteToShow) return true;
       return tempalteToShow.includes(this.selectedTemplateTab);
-    },
-    buildFromCustomTemplate(flightsTxt) {
-      const langKey = this.selectedLang === "en" ? "en" : this.selectedLang;
-      const tpl = loadTemplate("flight", langKey);
-      if (!tpl) return "";
-
-      const firstName = this.capitalizeFirstLetter(
-        this.data.travelers[0].name || ""
-      );
-      const allNamesRaw = this.data.travelers
-        .map(t => this.capitalizeFirstLetter(t.name || ""))
-        .filter(Boolean)
-        .join(" & ");
-
-      // Extract airline code from first flight if present
-      let airlineCode = "XX";
-      if (this.data.smartAmadeusCode) {
-        const m = this.data.smartAmadeusCode.match(/\b([A-Z0-9]{2})\s*\d{1,5}\b/);
-        if (m) airlineCode = m[1];
-      }
-
-      const cancelFee = this.data.prices["cancel fee"].cancelFee.value;
-      const currency = this.selectedCurrency;
-      const ticketIssuance = this.$t(
-        this.data.prices["​ticket issuance"]["​ticket issuance"].selected
-      );
-      const classOfTravel = this.data.classOfTravel || this.$t("compartment options");
-
-      const values = {
-        CUSTOMER_NAME: firstName || "?",
-        ALL_NAMES: allNamesRaw || firstName,
-        DESTINATION: this.journeyTxt || "?",
-        FLIGHTS: flightsTxt || "",
-        AIRLINE_CODE: airlineCode,
-        AIRLINE_NAME: "xx",
-        CLASS: classOfTravel,
-        PRICE: String(this.totalPrice || ""),
-        CURRENCY: currency || "",
-        BAGGAGE: this.baggageList || "",
-        CHANGE_FEE: String(this.changeFeeValue || ""),
-        CANCEL_FEE: `${cancelFee || 0}${currency || ""}`,
-        NO_SHOW: String(this.noShowValue || ""),
-        TICKET_ISSUANCE: ticketIssuance || "",
-        GREETING: this.$t("shalom"),
-        FAREWELL: this.$t("farewell")
-      };
-
-      return tpl.replace(/\{\{([A-Z_]+)\}\}/g, (match, key) => {
-        return values[key] !== undefined ? values[key] : match;
-      });
     },
     checkIfDisplaySubInput(optionName) {
       switch (optionName) {
