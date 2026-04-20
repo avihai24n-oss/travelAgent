@@ -1,4 +1,4 @@
-const NAME_LINE_RE = /(\d+)\.([A-Z]+)\/([A-Z][A-Z ]*?)\s+(MR|MRS|MS|MSTR|MISS|CHD|INF)(?=\s|$)/gi;
+const NAME_LINE_RE = /(?:\d+\.)?\s*([A-Z][A-Z'\-]+)\/([A-Z][A-Z '\-]*?)\s+(MR|MRS|MS|MSTR|MISS|DR|CHD|CHLD|INF|INFT)(?=\s|$)/gim;
 
 export function parseAmadeusNames(raw) {
   if (!raw || typeof raw !== "string") return [];
@@ -19,14 +19,10 @@ export function parseAmadeusNames(raw) {
 }
 
 function titleToType(title) {
-  switch (title) {
-    case "CHD":
-      return "child";
-    case "INF":
-      return "infant";
-    default:
-      return "adult";
-  }
+  const t = (title || "").toUpperCase();
+  if (t === "CHD" || t === "CHLD") return "child";
+  if (t === "INF" || t === "INFT") return "infant";
+  return "adult";
 }
 
 export async function translateNamesViaProxy(names, targetLang) {
