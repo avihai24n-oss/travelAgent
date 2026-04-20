@@ -6,6 +6,28 @@
 // Configuration for your app
 // https://v1.quasar.dev/quasar-cli/quasar-conf-js
 
+const fs = require('fs');
+const path = require('path');
+
+function loadEnvFile(fileName) {
+  const envPath = path.join(__dirname, fileName);
+  if (!fs.existsSync(envPath)) return {};
+  const content = fs.readFileSync(envPath, 'utf8');
+  const result = {};
+  content.split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx === -1) return;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const value = trimmed.slice(eqIdx + 1).trim().replace(/^['"]|['"]$/g, '');
+    result[key] = value;
+  });
+  return result;
+}
+
+const envVars = Object.assign({}, loadEnvFile('.env'), loadEnvFile('.env.local'));
+
 module.exports = function (/* ctx */) {
   return {
     // https://v1.quasar.dev/quasar-cli/supporting-ts
@@ -44,6 +66,9 @@ module.exports = function (/* ctx */) {
 
     // Full list of options: https://v1.quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
     build: {
+      env: {
+        VUE_APP_OPENAI_KEY: envVars.VUE_APP_OPENAI_KEY || ''
+      },
       vueRouterMode: 'hash', // available values: 'hash', 'history'
 
       // transpile: false,
@@ -95,7 +120,7 @@ module.exports = function (/* ctx */) {
       // directives: [],
 
       // Quasar plugins
-      plugins: ["LocalStorage"]
+      plugins: ["LocalStorage", "Notify"]
     },
 
     // animations: 'all', // --- includes all animations

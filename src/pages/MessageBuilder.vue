@@ -57,6 +57,21 @@
             class="amadeus-input amadeus-input-hero"
             input-style="min-height: 220px; font-size: 18px; line-height: 1.6;"
           />
+          <div class="q-mt-sm row items-center q-gutter-sm">
+            <q-btn
+              :label="translateBtnLabel"
+              icon="translate"
+              color="primary"
+              outline
+              :loading="isTranslatingNames"
+              :disable="!data.smartAmadeusCode"
+              @click="onTranslateNamesFromPNR"
+              no-caps
+            />
+            <span v-if="lastTranslationInfo" class="text-caption text-grey-7">
+              {{ lastTranslationInfo }}
+            </span>
+          </div>
           <q-input
             v-if="selectedLang === 'he'"
             v-model="ticketIssuanceDeadline"
@@ -350,6 +365,11 @@ import messageMixin from "./messageMixin";
 import { LocalStorage } from "quasar";
 import { airports } from "src/assets/iata";
 import { loadTemplate, FLIGHT_ITEM_KEYS } from "src/assets/defaultTemplates.js";
+import {
+  parseAmadeusNames,
+  translateNamesWithOpenAI,
+  buildTravelersFromNames
+} from "src/assets/nameTranslator.js";
 import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
 
 export default {
@@ -360,6 +380,8 @@ export default {
       tab: "info",
       selectedTemplateTab: "All",
       contactListApiSupported: false,
+      isTranslatingNames: false,
+      lastTranslationInfo: "",
       TRAVELER_TYPES: TRAVELER_TYPES,
       CLASSES_TYPE_MAP: CLASSES_TYPE_MAP,
       LANGS: LANGS,
@@ -392,6 +414,56 @@ export default {
         name: "",
         type: "adult"
       });
+    },
+    translatedCountMsg(count) {
+      switch (this.selectedLang) {
+        case "he":
+          return `תורגמו ${count} שמות`;
+        case "fr":
+          return `${count} noms traduits`;
+        default:
+          return `${count} names filled`;
+      }
+    },
+    async onTranslateNamesFromPNR() {
+      const raw = this.data.smartAmadeusCode || "";
+      const parsed = parseAmadeusNames(raw);
+      if (!parsed.length) {
+        this.lastTranslationInfo = this.noNamesFoundMsg;
+        this.$q.notify({
+          type: "warning",
+          message: this.noNamesFoundMsg,
+          timeout: 3000
+        });
+        return;
+      }
+      this.isTranslatingNames = true;
+      this.lastTranslationInfo = "";
+      try {
+        const apiKey = process.env.VUE_APP_OPENAI_KEY;
+        const translated = await translateNamesWithOpenAI(
+          parsed,
+          this.selectedLang,
+          apiKey
+        );
+        const newTravelers = buildTravelersFromNames(parsed, translated);
+        this.data.travelers = newTravelers;
+        this.lastTranslationInfo = this.translatedCountMsg(newTravelers.length);
+        this.$q.notify({
+          type: "positive",
+          message: this.translatedCountMsg(newTravelers.length),
+          timeout: 2500
+        });
+      } catch (err) {
+        const msg = err && err.message === "missing_api_key"
+          ? this.missingApiKeyMsg
+          : this.translationFailedMsg;
+        this.lastTranslationInfo = msg;
+        this.$q.notify({ type: "negative", message: msg, timeout: 4000 });
+        console.error("translate names error:", err);
+      } finally {
+        this.isTranslatingNames = false;
+      }
     },
     onRemoveTraveler(idx) {
       this.data.travelers = this.data.travelers.filter(
@@ -685,6 +757,46 @@ export default {
     }
   },
   computed: {
+    translateBtnLabel() {
+      switch (this.selectedLang) {
+        case "he":
+          return "תרגם שמות מ-PNR";
+        case "fr":
+          return "Traduire les noms du PNR";
+        default:
+          return "Fill names from PNR";
+      }
+    },
+    noNamesFoundMsg() {
+      switch (this.selectedLang) {
+        case "he":
+          return "לא נמצאו שמות בקוד ה-PNR";
+        case "fr":
+          return "Aucun nom trouvé dans le PNR";
+        default:
+          return "No names found in PNR";
+      }
+    },
+    translationFailedMsg() {
+      switch (this.selectedLang) {
+        case "he":
+          return "תרגום השמות נכשל — נסה שוב";
+        case "fr":
+          return "Échec de la traduction des noms";
+        default:
+          return "Name translation failed";
+      }
+    },
+    missingApiKeyMsg() {
+      switch (this.selectedLang) {
+        case "he":
+          return "חסר מפתח API";
+        case "fr":
+          return "Clé API manquante";
+        default:
+          return "Missing API key";
+      }
+    },
     selectedCurrency() {
       return this.data.prices.currency.currency.selected;
     },
