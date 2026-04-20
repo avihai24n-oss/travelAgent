@@ -74,10 +74,13 @@ const messageMixin = {
       }&text=%20${encodeURIComponent(this.whatsappMessage)}`;
       window.open(url, "_blank");
     },
+    isFlightLine(line) {
+      if (!line) return false;
+      return /\b[A-Z]{2,3}\s*\d{1,4}\s+[A-Z]\s+\d{2}[A-Z]{3}/.test(line);
+    },
     getAmadeusTranslate(linesString) {
       if (linesString.length) {
-        let lines,
-          splited,
+        let splited,
           nextLineSplited,
           hoursDifference = 0,
           way,
@@ -85,7 +88,8 @@ const messageMixin = {
 
         //             ? this.$t("other destination flight")
 
-        lines = linesString.split("\n");
+        const rawLines = linesString.split("\n");
+        const lines = rawLines.filter(l => this.isFlightLine(l));
         let nextLine;
 
         lines.forEach((line, idx) => {
@@ -93,6 +97,7 @@ const messageMixin = {
           nextLineSplited = this.getSplittedLine(lines[idx + 1]);
 
           line = this.getSplitedLineDetails(splited);
+          if (!line) return;
 
           if (idx === 0) {
             this.firstDepart = line.departAirport;
@@ -171,7 +176,7 @@ const messageMixin = {
     getParsedFlights() {
       const raw = this.data.smartAmadeusCode || "";
       if (!raw) return [];
-      const lines = raw.split("\n");
+      const lines = raw.split("\n").filter(l => this.isFlightLine(l));
       const flights = [];
       for (const rawLine of lines) {
         const splitted = this.getSplittedLine(rawLine);
@@ -272,16 +277,16 @@ const messageMixin = {
       }
     },
     getSplitedLineDetails(splitedLine) {
-      if (!splitedLine) return;
+      if (!splitedLine || splitedLine.length < 11) return;
       let line = {},
         latterOfclassOfTravel,
         dayNumber;
 
       latterOfclassOfTravel = splitedLine[3];
       line.flightClass = this.setClassOfTravel(latterOfclassOfTravel);
-      line.airline = airlines.filter(item => {
-        return item.IATA === splitedLine[1];
-      })[0].name;
+      const airlineEntry = airlines.filter(item => item.IATA === splitedLine[1])[0];
+      if (!airlineEntry) return;
+      line.airline = airlineEntry.name;
       line.flightNumber = `${splitedLine[1]}${splitedLine[2]}`;
       dayNumber = splitedLine[5];
       line.departAirportCode = splitedLine[6].slice(0, 3);
