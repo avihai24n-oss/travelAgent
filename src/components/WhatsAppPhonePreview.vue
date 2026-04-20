@@ -29,8 +29,59 @@
         </div>
         <div class="wa-chat" :dir="dir">
           <div class="wa-bubble wa-sent" :class="{ rtl: dir === 'rtl', editing }">
+            <div
+              v-if="editing && spacingMode && segmentsSnapshot"
+              class="wa-bubble-spacing"
+              :dir="dir"
+            >
+              <template v-for="(seg, idx) in segmentsSnapshot">
+                <span
+                  v-if="seg.type === 'ws'"
+                  :key="'ws-' + idx"
+                  :ref="'ws' + idx"
+                  class="wa-ws"
+                  contenteditable="true"
+                  spellcheck="false"
+                  @input="onWsInput"
+                  @keydown="onWsKeydown"
+                  @paste="onWsPaste"
+                >{{ seg.text }}</span>
+                <span
+                  v-else-if="seg.type === 'placeholder'"
+                  :key="'ph-' + idx"
+                  class="wa-token wa-token-ph"
+                  contenteditable="false"
+                  :title="seg.key"
+                  v-html="seg.valueHtml"
+                ></span>
+                <b
+                  v-else-if="seg.type === 'fmt' && seg.tag === 'b'"
+                  :key="'fmt-' + idx"
+                  class="wa-token wa-token-fmt"
+                  contenteditable="false"
+                >{{ seg.inner }}</b>
+                <i
+                  v-else-if="seg.type === 'fmt' && seg.tag === 'i'"
+                  :key="'fmt-' + idx"
+                  class="wa-token wa-token-fmt"
+                  contenteditable="false"
+                >{{ seg.inner }}</i>
+                <s
+                  v-else-if="seg.type === 'fmt' && seg.tag === 's'"
+                  :key="'fmt-' + idx"
+                  class="wa-token wa-token-fmt"
+                  contenteditable="false"
+                >{{ seg.inner }}</s>
+                <span
+                  v-else
+                  :key="'tx-' + idx"
+                  class="wa-token"
+                  contenteditable="false"
+                >{{ seg.text }}</span>
+              </template>
+            </div>
             <textarea
-              v-if="editing"
+              v-else-if="editing"
               ref="editor"
               class="wa-bubble-editor"
               :value="editorValue"
@@ -58,10 +109,16 @@ export default {
     dir: { type: String, default: "ltr" },
     contactName: { type: String, default: "Gad Elnekave" },
     editValue: { type: String, default: null },
-    editHint: { type: String, default: "" }
+    editHint: { type: String, default: "" },
+    spacingMode: { type: Boolean, default: false },
+    spacingSamples: { type: Object, default: () => ({}) }
   },
   data() {
-    return { editing: false };
+    return {
+      editing: false,
+      segmentsSnapshot: null,
+      selfEmittedValue: null
+    };
   },
   computed: {
     avatarLetter() {
@@ -87,18 +144,27 @@ export default {
   watch: {
     editing(on) {
       if (on) {
+        if (this.spacingMode) this.rebuildSegments();
         this.$nextTick(() => {
           this.autoResize();
           const el = this.$refs.editor;
           if (el) el.focus();
         });
+      } else {
+        this.segmentsSnapshot = null;
       }
     },
     text() {
       if (this.editing) this.$nextTick(() => this.autoResize());
     },
-    editValue() {
+    editValue(newVal) {
       if (this.editing) this.$nextTick(() => this.autoResize());
+      if (this.editing && this.spacingMode && newVal !== this.selfEmittedValue) {
+        this.rebuildSegments();
+      }
+    },
+    spacingSamples() {
+      if (this.editing && this.spacingMode) this.rebuildSegments();
     }
   },
   methods: {
@@ -119,6 +185,137 @@ export default {
       if (!el) return;
       el.style.height = "auto";
       el.style.height = el.scrollHeight + "px";
+    },
+    rebuildSegments() {
+      const tpl = this.editValue || "";
+      this.segmentsSnapshot = this.tokenizeForSpacing(tpl, this.spacingSamples || {});
+    },
+    tokenizeForSpacing(tpl, samples) {
+      const segments = [];
+      const len = tpl.length;
+      const wsRe = /\s/;
+      let i = 0;
+      while (i < len) {
+        const c = tpl[i];
+        if (wsRe.test(c)) {
+          let j = i;
+          while (j < len && wsRe.test(tpl[j])) j++;
+          segments.push({ type: "ws", text: tpl.slice(i, j) });
+          i = j;
+          continue;
+        }
+        if (c === "{" && tpl[i + 1] === "{") {
+          const close = tpl.indexOf("}}", i + 2);
+          if (close !== -1) {
+            const key = tpl.slice(i + 2, close);
+            if (/^[A-Z_]+$/.test(key)) {
+              const raw = tpl.slice(i, close + 2);
+              const value =
+                samples && samples[key] !== undefined
+                  ? String(samples[key])
+                  : raw;
+              segments.push({
+                type: "placeholder",
+                raw,
+                key,
+                valueHtml: this.renderWhatsApp(value)
+              });
+              i = close + 2;
+              continue;
+            }
+          }
+        }
+        const prev = i === 0 ? " " : tpl[i - 1];
+        const atBoundary = i === 0 || wsRe.test(prev) || /[(\[{]/.test(prev);
+        if (atBoundary && (c === "*" || c === "_" || c === "~")) {
+          let j = i + 1;
+          let closeIdx = -1;
+          while (j < len) {
+            const ch = tpl[j];
+            if (ch === "\n") break;
+            if (ch === c && j > i + 1 && !wsRe.test(tpl[j - 1])) {
+              const after = tpl[j + 1];
+              if (after === undefined || wsRe.test(after) || /[)\]}.,!?:;'"]/.test(after)) {
+                closeIdx = j;
+                break;
+              }
+            }
+            j++;
+          }
+          if (closeIdx > i + 1) {
+            const tag = c === "*" ? "b" : c === "_" ? "i" : "s";
+            const inner = tpl.slice(i + 1, closeIdx);
+            segments.push({
+              type: "fmt",
+              raw: tpl.slice(i, closeIdx + 1),
+              tag,
+              inner
+            });
+            i = closeIdx + 1;
+            continue;
+          }
+        }
+        let j = i;
+        while (j < len) {
+          const ch = tpl[j];
+          if (wsRe.test(ch)) break;
+          if (ch === "{" && tpl[j + 1] === "{") break;
+          j++;
+        }
+        if (j === i) j = i + 1;
+        segments.push({ type: "text", text: tpl.slice(i, j) });
+        i = j;
+      }
+      return segments;
+    },
+    serializeSegmentsFromDom() {
+      const segs = this.segmentsSnapshot || [];
+      const out = [];
+      for (let idx = 0; idx < segs.length; idx++) {
+        const s = segs[idx];
+        if (s.type === "ws") {
+          const ref = this.$refs["ws" + idx];
+          const el = Array.isArray(ref) ? ref[0] : ref;
+          const dom = el ? el.textContent || "" : s.text;
+          out.push(dom.replace(/\S/g, ""));
+        } else if (s.type === "placeholder" || s.type === "fmt") {
+          out.push(s.raw);
+        } else {
+          out.push(s.text);
+        }
+      }
+      return out.join("");
+    },
+    onWsInput() {
+      const newTpl = this.serializeSegmentsFromDom();
+      this.selfEmittedValue = newTpl;
+      this.$emit("update:editValue", newTpl);
+    },
+    onWsKeydown(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const navKeys = [
+        "Backspace", "Delete", "Tab",
+        "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+        "Home", "End", "PageUp", "PageDown",
+        "Shift", "CapsLock", "Control", "Alt", "Meta", "Escape"
+      ];
+      if (navKeys.indexOf(e.key) !== -1) return;
+      if (e.key === " " || e.key === "Enter" || e.key === "Spacebar") return;
+      if (e.key && e.key.length === 1) {
+        e.preventDefault();
+      }
+    },
+    onWsPaste(e) {
+      e.preventDefault();
+      const cb = e.clipboardData || window.clipboardData;
+      if (!cb) return;
+      const text = cb.getData("text") || "";
+      const ws = text.replace(/\S/g, "");
+      if (ws) {
+        try {
+          document.execCommand("insertText", false, ws);
+        } catch (_err) { /* noop */ }
+      }
     },
     renderWhatsApp(src) {
       let s = src
@@ -388,6 +585,74 @@ body.body--dark .wa-edit-banner {
 }
 
 .wa-bubble-editor:focus { outline: 0; }
+
+.wa-bubble-spacing {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: inherit;
+  font: inherit;
+  color: inherit;
+}
+
+.wa-bubble-spacing .wa-token {
+  display: inline;
+  background: rgba(0, 128, 105, 0.08);
+  border-radius: 3px;
+  padding: 0 2px;
+  margin: 0;
+  color: inherit;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: not-allowed;
+  white-space: pre-wrap;
+}
+
+.wa-bubble-spacing .wa-token-ph {
+  background: rgba(37, 99, 235, 0.14);
+  color: #0b3a8f;
+  font-weight: 500;
+}
+
+.wa-bubble-spacing .wa-token-fmt { background: rgba(0, 128, 105, 0.12); }
+
+.wa-bubble-spacing .wa-ws {
+  display: inline;
+  outline: 0;
+  min-width: 3px;
+  background: rgba(253, 216, 53, 0.28);
+  border-radius: 2px;
+  padding: 0 1px;
+  cursor: text;
+  white-space: pre-wrap;
+}
+
+.wa-bubble-spacing .wa-ws:focus {
+  background: rgba(253, 216, 53, 0.55);
+  box-shadow: 0 0 0 1px #fbc02d inset;
+}
+
+body.body--dark .wa-bubble-spacing .wa-token {
+  background: rgba(233, 237, 239, 0.10);
+}
+
+body.body--dark .wa-bubble-spacing .wa-token-ph {
+  background: rgba(138, 180, 248, 0.22);
+  color: #cfe0ff;
+}
+
+body.body--dark .wa-bubble-spacing .wa-token-fmt {
+  background: rgba(233, 237, 239, 0.14);
+}
+
+body.body--dark .wa-bubble-spacing .wa-ws {
+  background: rgba(251, 192, 45, 0.22);
+}
+
+body.body--dark .wa-bubble-spacing .wa-ws:focus {
+  background: rgba(251, 192, 45, 0.42);
+  box-shadow: 0 0 0 1px #fbc02d inset;
+}
 
 .wa-bubble-text ::v-deep b { font-weight: 700; }
 .wa-bubble-text ::v-deep i { font-style: italic; }

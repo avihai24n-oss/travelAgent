@@ -162,7 +162,9 @@
           :edit-value="draftValue"
           :dir="currentDir"
           contact-name="Gad Elnekave"
-          edit-hint="עריכת תבנית בפורמט טלפון — כל שינוי מתעדכן גם בעורך הטקסט. לחץ ״שמור״ לשמירה."
+          :spacing-mode="true"
+          :spacing-samples="spacingSamples"
+          edit-hint="עריכת רווחים בלבד — אפשר להוסיף או למחוק רווחים ושורות בין המילים. לחץ ״שמור״ לשמירה."
           @update:editValue="draftValue = $event"
         />
       </div>
@@ -532,6 +534,11 @@ export default {
         /\{\{([A-Z_]+)\}\}/g,
         (m, key) => (sample[key] !== undefined ? sample[key] : m)
       );
+    },
+    spacingSamples() {
+      const base = PREVIEW_SAMPLES[this.activeLang] || PREVIEW_SAMPLES.en;
+      const flight = (PREVIEW_FLIGHTS[this.activeLang] || PREVIEW_FLIGHTS.en)[0] || {};
+      return { ...base, ...flight };
     }
   },
   watch: {
