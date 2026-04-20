@@ -6,7 +6,7 @@
         v-for="key in placeholderKeys"
         :key="key"
         type="button"
-        class="chip chip-btn"
+        class="chip-btn"
         @mousedown.prevent="insertPlaceholder(key)"
       >
         {{ labelFor(key) }}
@@ -122,7 +122,7 @@ export default {
 
     buildChipNode(key) {
       const chip = document.createElement("span");
-      chip.className = "chip chip-token";
+      chip.className = "chip-token";
       chip.setAttribute("contenteditable", "false");
       chip.setAttribute("draggable", "true");
       chip.dataset.placeholder = key;
@@ -571,51 +571,41 @@ body.body--dark .template-editor {
 </style>
 
 <style lang="scss">
-/* NOT scoped — these classes are on JS-created DOM (chips in editor, ghost on body).
-   Vue scoped styles don't reach dynamically-inserted nodes, so keep these global. */
-.template-editor .chip,
-.chip-ghost {
+/* NOT scoped — chip-token nodes are JS-created and scoped styles don't reach them. */
+
+/* Toolbar buttons stay as small pills (they're actions, not inline content). */
+.template-editor .chip-btn {
   display: inline-flex;
   align-items: center;
   padding: 3px 11px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
-  background: #2563eb;
+  background: #3b82f6;
   color: #fff;
-  border: 1px solid #1e40af;
-  box-shadow: 0 1px 2px rgba(30, 64, 175, 0.25);
-  cursor: grab;
+  border: 1px solid #2563eb;
+  cursor: pointer;
   user-select: none;
   white-space: nowrap;
-  touch-action: none;
-}
-
-.template-editor .chip-btn {
-  cursor: pointer;
-  background: #3b82f6;
-  border-color: #2563eb;
 }
 
 .template-editor .chip-btn:hover {
   background: #2563eb;
 }
 
+/* Inline placeholders inside the editor — just bold blue text, no box. */
 .template-editor .chip-token {
-  margin: 0 3px;
-  vertical-align: baseline;
+  font-weight: 700;
+  color: #2563eb;
+  cursor: grab;
+  user-select: none;
+  white-space: nowrap;
+  border-radius: 2px;
+  padding: 0 1px;
 }
 
-.template-editor .chip-token::before,
-.chip-ghost::before {
-  content: "\22EE\22EE";
-  display: inline-block;
-  font-size: 11px;
-  line-height: 1;
-  letter-spacing: -3px;
-  margin-inline-end: 6px;
-  opacity: 0.75;
-  font-weight: 900;
+.template-editor .chip-token:hover {
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .template-editor .chip-token:active {
@@ -623,22 +613,42 @@ body.body--dark .template-editor {
   opacity: 0.85;
 }
 
+/* Ghost shown while dragging a token. */
 .chip-ghost {
-  opacity: 0.9;
-  transform: translate(-50%, -50%) scale(1.05);
-  box-shadow: 0 6px 14px rgba(30, 64, 175, 0.35);
+  display: inline-block;
+  font-weight: 700;
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 13px;
   pointer-events: none;
+  opacity: 0.95;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 6px rgba(30, 64, 175, 0.2);
 }
 
-body.body--dark .template-editor .chip {
-  background: #3b82f6;
-  color: #fff;
-  border-color: #60a5fa;
+body.body--dark .template-editor .chip-token,
+body.body--dark .chip-ghost {
+  color: #60a5fa;
+}
+
+body.body--dark .template-editor .chip-token:hover {
+  background: rgba(96, 165, 250, 0.15);
 }
 
 body.body--dark .template-editor .chip-btn {
+  background: #3b82f6;
+  border-color: #60a5fa;
+  color: #fff;
+}
+
+body.body--dark .template-editor .chip-btn:hover {
   background: #60a5fa;
-  border-color: #3b82f6;
   color: #0b1220;
+}
+
+body.body--dark .chip-ghost {
+  background: rgba(96, 165, 250, 0.2);
 }
 </style>
