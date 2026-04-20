@@ -22,6 +22,16 @@
           </div>
         </div>
         <q-btn
+          flat
+          round
+          dense
+          :icon="darkMode ? 'light_mode' : 'dark_mode'"
+          color="white"
+          class="icon-btn"
+          @click="toggleDarkMode"
+          :aria-label="darkMode ? 'מצב בהיר' : 'מצב חושך'"
+        />
+        <q-btn
           v-if="authed"
           flat
           round
@@ -257,6 +267,7 @@
 <script>
 import TemplateEditor from "src/components/TemplateEditor.vue";
 import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
+import { LocalStorage } from "quasar";
 import {
   PLACEHOLDERS,
   CATEGORIES,
@@ -472,7 +483,8 @@ export default {
       previewText: "",
       isCustom: false,
       resetConfirmText: "",
-      history: []
+      history: [],
+      darkMode: false
     };
   },
   computed: {
@@ -505,6 +517,8 @@ export default {
         this.authed = true;
       }
     } catch (e) { /* noop */ }
+    this.darkMode = !!LocalStorage.getItem("darkMode");
+    this.$q.dark.set(this.darkMode);
     if (this.authed) this.loadCurrent();
   },
   methods: {
@@ -532,6 +546,11 @@ export default {
     },
     goHome() {
       this.$router.push("/");
+    },
+    toggleDarkMode() {
+      this.darkMode = !this.darkMode;
+      this.$q.dark.set(this.darkMode);
+      LocalStorage.set("darkMode", this.darkMode);
     },
     loadCurrent() {
       const cat = this.activeCategory;
