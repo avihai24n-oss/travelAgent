@@ -587,34 +587,48 @@ ${this.$t("farewell")}`;
       const flightKeyRe = new RegExp(
         `\\{\\{(${FLIGHT_ITEM_KEYS.join("|")})\\}\\}`
       );
-      let firstIdx = -1;
-      let lastIdx = -1;
+
+      const blocks = [];
+      let curStart = -1;
       for (let i = 0; i < lines.length; i++) {
         if (flightKeyRe.test(lines[i])) {
-          if (firstIdx === -1) firstIdx = i;
-          lastIdx = i;
+          if (curStart === -1) curStart = i;
+        } else if (curStart !== -1) {
+          blocks.push({ start: curStart, end: i - 1 });
+          curStart = -1;
         }
       }
-      if (firstIdx === -1) return tpl;
+      if (curStart !== -1) blocks.push({ start: curStart, end: lines.length - 1 });
+      if (!blocks.length) return tpl;
 
-      if (!flights.length) {
-        return [
-          ...lines.slice(0, firstIdx),
-          ...lines.slice(lastIdx + 1)
-        ].join("\n");
+      const perBlock = blocks.map(() => []);
+      flights.forEach((f, i) => {
+        const bi = Math.min(i, blocks.length - 1);
+        perBlock[bi].push(f);
+      });
+
+      const out = [];
+      let i = 0;
+      let bIdx = 0;
+      while (i < lines.length) {
+        if (bIdx < blocks.length && i === blocks[bIdx].start) {
+          const { start, end } = blocks[bIdx];
+          const blockTpl = lines.slice(start, end + 1).join("\n");
+          if (perBlock[bIdx].length) {
+            out.push(
+              perBlock[bIdx]
+                .map(f => this.renderFlightBlock(blockTpl, f))
+                .join("\n")
+            );
+          }
+          i = end + 1;
+          bIdx++;
+        } else {
+          out.push(lines[i]);
+          i++;
+        }
       }
-
-      const blockLines = lines.slice(firstIdx, lastIdx + 1);
-      const blockTpl = blockLines.join("\n");
-      const rendered = flights
-        .map(f => this.renderFlightBlock(blockTpl, f))
-        .join("\n");
-
-      return [
-        ...lines.slice(0, firstIdx),
-        rendered,
-        ...lines.slice(lastIdx + 1)
-      ].join("\n");
+      return out.join("\n");
     },
     renderFlightBlock(blockTpl, f) {
       const isHe = this.selectedLang === "he";

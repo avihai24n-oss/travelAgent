@@ -1,6 +1,29 @@
 <template>
   <div class="template-editor" :dir="dir">
     <div class="toolbar">
+      <button
+        type="button"
+        class="undo-btn"
+        :disabled="!canUndo"
+        :title="dir === 'rtl' ? 'בטל (Ctrl+Z)' : 'Undo (Ctrl+Z)'"
+        :aria-label="dir === 'rtl' ? 'בטל' : 'Undo'"
+        @click="undo"
+      >
+        <span aria-hidden="true">↶</span>
+        <span class="undo-label">{{ dir === 'rtl' ? 'בטל' : 'Undo' }}</span>
+      </button>
+      <button
+        type="button"
+        class="undo-btn"
+        :disabled="!canRedo"
+        :title="dir === 'rtl' ? 'בצע שוב (Ctrl+Shift+Z)' : 'Redo (Ctrl+Shift+Z)'"
+        :aria-label="dir === 'rtl' ? 'בצע שוב' : 'Redo'"
+        @click="redo"
+      >
+        <span aria-hidden="true">↷</span>
+        <span class="undo-label">{{ dir === 'rtl' ? 'בצע שוב' : 'Redo' }}</span>
+      </button>
+      <span class="toolbar-sep"></span>
       <span class="toolbar-label">{{ toolbarLabel }}</span>
       <button
         v-for="key in placeholderKeys"
@@ -67,6 +90,12 @@ export default {
   computed: {
     placeholderKeys() {
       return Object.keys(this.placeholders);
+    },
+    canUndo() {
+      return this.historyIndex > 0 || this.historyTimer !== null;
+    },
+    canRedo() {
+      return this.historyIndex < this.history.length - 1;
     }
   },
   watch: {
@@ -587,6 +616,74 @@ body.body--dark .template-editor {
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
+}
+
+.template-editor .undo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d0d7de;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  min-height: 32px;
+}
+
+.template-editor .undo-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.template-editor .undo-btn:active:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.template-editor .undo-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.template-editor .undo-btn span[aria-hidden] {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.template-editor .toolbar-sep {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  background: #d0d7de;
+  margin: 0 4px;
+}
+
+@media (max-width: 480px) {
+  .template-editor .undo-btn .undo-label {
+    display: none;
+  }
+  .template-editor .undo-btn {
+    padding: 6px 10px;
+  }
+}
+
+body.body--dark .template-editor .undo-btn {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.body--dark .template-editor .undo-btn:hover:not(:disabled) {
+  background: #333;
+  border-color: #666;
+}
+
+body.body--dark .template-editor .toolbar-sep {
+  background: #444;
 }
 
 .template-editor .chip-btn:hover {
