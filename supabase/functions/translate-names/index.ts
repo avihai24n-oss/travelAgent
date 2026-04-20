@@ -48,14 +48,22 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  let body: RequestBody;
+  let body: RequestBody & { ping?: boolean };
   try {
-    body = (await req.json()) as RequestBody;
+    body = (await req.json()) as RequestBody & { ping?: boolean };
   } catch {
     return new Response(JSON.stringify({ error: "invalid_json" }), {
       status: 400,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
+  }
+
+  if (body.ping) {
+    const hasKey = Boolean(Deno.env.get("OPENAI_KEY"));
+    return new Response(
+      JSON.stringify({ ok: true, openaiConfigured: hasKey }),
+      { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+    );
   }
 
   const { names, lang } = body;

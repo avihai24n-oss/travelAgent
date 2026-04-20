@@ -25,6 +25,32 @@ function titleToType(title) {
   return "adult";
 }
 
+export async function pingTranslationApi() {
+  const supabaseUrl = process.env.VUE_APP_SUPABASE_URL;
+  const supabaseKey = process.env.VUE_APP_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) {
+    return { ok: false, reason: "missing_proxy_config" };
+  }
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/translate-names`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({ ping: true })
+    });
+    if (!res.ok) return { ok: false, reason: `status_${res.status}` };
+    const data = await res.json();
+    return {
+      ok: data.ok === true,
+      openaiConfigured: data.openaiConfigured === true
+    };
+  } catch (err) {
+    return { ok: false, reason: "network_error" };
+  }
+}
+
 export async function translateNamesViaProxy(names, targetLang) {
   if (!names || !names.length) return [];
 

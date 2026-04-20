@@ -64,13 +64,47 @@
               color="primary"
               outline
               :loading="isTranslatingNames"
-              :disable="!data.smartAmadeusCode"
+              :disable="!data.smartAmadeusCode || apiStatus === 'offline'"
               @click="onTranslateNamesFromPNR"
               no-caps
             />
-            <span v-if="lastTranslationInfo" class="text-caption text-grey-7">
-              {{ lastTranslationInfo }}
-            </span>
+            <q-chip
+              :color="apiStatusColor"
+              text-color="white"
+              size="sm"
+              :icon="apiStatusIcon"
+              dense
+            >
+              {{ apiStatusLabel }}
+            </q-chip>
+            <q-btn
+              flat
+              dense
+              round
+              size="sm"
+              icon="refresh"
+              :loading="apiStatus === 'unknown'"
+              @click="refreshApiStatus"
+              :aria-label="selectedLang === 'he' ? 'בדוק חיבור' : 'Check API'"
+            />
+          </div>
+          <div
+            v-if="lastTranslatedNames.length"
+            class="q-mt-sm translated-names-box"
+            :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
+          >
+            <div class="text-caption text-grey-7">
+              {{ translatedNamesHeading }}
+            </div>
+            <div class="text-body2">
+              {{ lastTranslatedNames.join(", ") }}
+            </div>
+          </div>
+          <div
+            v-else-if="lastTranslationInfo"
+            class="q-mt-sm text-caption text-grey-7"
+          >
+            {{ lastTranslationInfo }}
           </div>
           <q-input
             v-if="selectedLang === 'he'"
@@ -368,7 +402,8 @@ import { loadTemplate, FLIGHT_ITEM_KEYS } from "src/assets/defaultTemplates.js";
 import {
   parseAmadeusNames,
   translateNamesViaProxy,
-  buildTravelersFromNames
+  buildTravelersFromNames,
+  pingTranslationApi
 } from "src/assets/nameTranslator.js";
 import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
 
@@ -382,6 +417,8 @@ export default {
       contactListApiSupported: false,
       isTranslatingNames: false,
       lastTranslationInfo: "",
+      lastTranslatedNames: [],
+      apiStatus: "unknown", // "unknown" | "ok" | "offline" | "misconfigured"
       TRAVELER_TYPES: TRAVELER_TYPES,
       CLASSES_TYPE_MAP: CLASSES_TYPE_MAP,
       LANGS: LANGS,
@@ -408,6 +445,9 @@ export default {
     this.darkMode = LocalStorage.getItem("darkMode");
     this.$q.dark.set(this.darkMode);
   },
+  mounted() {
+    this.refreshApiStatus();
+  },
   methods: {
     onAddTraveler() {
       this.data.travelers.push({
@@ -425,10 +465,20 @@ export default {
           return `${count} names filled`;
       }
     },
+    async refreshApiStatus() {
+      this.apiStatus = "unknown";
+      const result = await pingTranslationApi();
+      if (!result.ok) {
+        this.apiStatus = "offline";
+        return;
+      }
+      this.apiStatus = result.openaiConfigured ? "ok" : "misconfigured";
+    },
     async onTranslateNamesFromPNR() {
       const raw = this.data.smartAmadeusCode || "";
       const parsed = parseAmadeusNames(raw);
       if (!parsed.length) {
+        this.lastTranslatedNames = [];
         this.lastTranslationInfo = this.noNamesFoundMsg;
         this.$q.notify({
           type: "warning",
@@ -439,6 +489,7 @@ export default {
       }
       this.isTranslatingNames = true;
       this.lastTranslationInfo = "";
+      this.lastTranslatedNames = [];
       try {
         const translated = await translateNamesViaProxy(
           parsed,
@@ -446,7 +497,8 @@ export default {
         );
         const newTravelers = buildTravelersFromNames(parsed, translated);
         this.data.travelers = newTravelers;
-        this.lastTranslationInfo = this.translatedCountMsg(newTravelers.length);
+        this.lastTranslatedNames = newTravelers.map(t => t.name);
+        this.onPreview();
         this.$q.notify({
           type: "positive",
           message: this.translatedCountMsg(newTravelers.length),
@@ -794,6 +846,58 @@ export default {
           return "Clé API manquante";
         default:
           return "Missing API key";
+      }
+    },
+    translatedNamesHeading() {
+      switch (this.selectedLang) {
+        case "he":
+          return "שמות שתורגמו:";
+        case "fr":
+          return "Noms traduits :";
+        default:
+          return "Translated names:";
+      }
+    },
+    apiStatusColor() {
+      switch (this.apiStatus) {
+        case "ok":
+          return "positive";
+        case "misconfigured":
+          return "warning";
+        case "offline":
+          return "negative";
+        default:
+          return "grey";
+      }
+    },
+    apiStatusIcon() {
+      switch (this.apiStatus) {
+        case "ok":
+          return "check_circle";
+        case "misconfigured":
+          return "warning";
+        case "offline":
+          return "error";
+        default:
+          return "hourglass_empty";
+      }
+    },
+    apiStatusLabel() {
+      const isHe = this.selectedLang === "he";
+      const isFr = this.selectedLang === "fr";
+      switch (this.apiStatus) {
+        case "ok":
+          return isHe ? "API פעיל" : isFr ? "API actif" : "API online";
+        case "misconfigured":
+          return isHe
+            ? "API פעיל, OpenAI לא מוגדר"
+            : isFr
+            ? "API actif, OpenAI non configuré"
+            : "API online, OpenAI not configured";
+        case "offline":
+          return isHe ? "API לא זמין" : isFr ? "API hors ligne" : "API offline";
+        default:
+          return isHe ? "בודק..." : isFr ? "Vérification..." : "Checking...";
       }
     },
     selectedCurrency() {
