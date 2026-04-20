@@ -1,10 +1,45 @@
 // Placeholder registry: each key maps to human-readable labels per language.
 // Labels are what the admin sees rendered inside chips.
+export const FLIGHT_ITEM_KEYS = [
+  "FLIGHT_DIRECTION",
+  "FLIGHT_AIRLINE",
+  "FLIGHT_NUMBER",
+  "FLIGHT_ORIGIN_CITY",
+  "FLIGHT_ORIGIN_CODE",
+  "FLIGHT_DEST_CITY",
+  "FLIGHT_DEST_CODE",
+  "FLIGHT_DEPART_DAY",
+  "FLIGHT_DEPART_DATE",
+  "FLIGHT_DEPART_MONTH",
+  "FLIGHT_DEPART_TIME",
+  "FLIGHT_ARRIVE_DAY",
+  "FLIGHT_ARRIVE_DATE",
+  "FLIGHT_ARRIVE_MONTH",
+  "FLIGHT_ARRIVE_TIME",
+  "FLIGHT_CLASS"
+];
+
 export const PLACEHOLDERS = {
   CUSTOMER_NAME: { he: "שם לקוח", en: "Customer", fr: "Client" },
   ALL_NAMES: { he: "שמות נוספים", en: "Other travelers", fr: "Autres voyageurs" },
   DESTINATION: { he: "יעד", en: "Destination", fr: "Destination" },
-  FLIGHTS: { he: "פרטי טיסות", en: "Flights", fr: "Vols" },
+  FLIGHT_DIRECTION: { he: "כיוון", en: "Direction", fr: "Sens" },
+  FLIGHT_AIRLINE: { he: "חברה", en: "Airline", fr: "Compagnie" },
+  FLIGHT_NUMBER: { he: "מס' טיסה", en: "Flight no.", fr: "N° vol" },
+  FLIGHT_ORIGIN_CITY: { he: "עיר מוצא", en: "Origin", fr: "Origine" },
+  FLIGHT_ORIGIN_CODE: { he: "קוד מוצא", en: "Origin code", fr: "Code origine" },
+  FLIGHT_DEST_CITY: { he: "עיר יעד", en: "Destination", fr: "Destination" },
+  FLIGHT_DEST_CODE: { he: "קוד יעד", en: "Dest. code", fr: "Code dest." },
+  FLIGHT_DEPART_DAY: { he: "יום המראה", en: "Dep. day", fr: "Jour dép." },
+  FLIGHT_DEPART_DATE: { he: "תאריך המראה", en: "Dep. date", fr: "Date dép." },
+  FLIGHT_DEPART_MONTH: { he: "חודש המראה", en: "Dep. month", fr: "Mois dép." },
+  FLIGHT_DEPART_TIME: { he: "שעת המראה", en: "Dep. time", fr: "Heure dép." },
+  FLIGHT_ARRIVE_DAY: { he: "יום נחיתה", en: "Arr. day", fr: "Jour arr." },
+  FLIGHT_ARRIVE_DATE: { he: "תאריך נחיתה", en: "Arr. date", fr: "Date arr." },
+  FLIGHT_ARRIVE_MONTH: { he: "חודש נחיתה", en: "Arr. month", fr: "Mois arr." },
+  FLIGHT_ARRIVE_TIME: { he: "שעת נחיתה", en: "Arr. time", fr: "Heure arr." },
+  FLIGHT_CLASS: { he: "מחלקת טיסה", en: "Flight class", fr: "Classe vol" },
+  FLIGHTS: { he: "פרטי טיסות (בלוק שלם)", en: "Flights (full block)", fr: "Vols (bloc entier)" },
   AIRLINE_NAME: { he: "חברת תעופה", en: "Airline", fr: "Compagnie" },
   AIRLINE_CODE: { he: "קוד חברה", en: "Airline code", fr: "Code compagnie" },
   CLASS: { he: "מחלקה", en: "Class", fr: "Classe" },
@@ -37,7 +72,11 @@ export const DEFAULT_TEMPLATES = {
 {{ALL_NAMES}}
 
 *מסלול הטיסות* 🌍
-{{FLIGHTS}}
+*טיסת {{FLIGHT_DIRECTION}} 🛫*
+{{FLIGHT_AIRLINE}} – *{{FLIGHT_NUMBER}}*
+{{FLIGHT_ORIGIN_CITY}} ⬅️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
+ממריא: {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}}  {{FLIGHT_DEPART_TIME}}
+נוחת: {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}}  {{FLIGHT_ARRIVE_TIME}}
 
 *חברת התעופה:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*

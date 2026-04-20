@@ -339,7 +339,7 @@ import {
 import messageMixin from "./messageMixin";
 import { LocalStorage } from "quasar";
 import { airports } from "src/assets/iata";
-import { loadTemplate } from "src/assets/defaultTemplates.js";
+import { loadTemplate, FLIGHT_ITEM_KEYS } from "src/assets/defaultTemplates.js";
 
 export default {
   mixins: [messageMixin],
@@ -570,8 +570,84 @@ ${this.$t("farewell")}`;
         FAREWELL: this.$t("farewell")
       };
 
-      return tpl.replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
+      const withFlights = this.expandFlightBlock(tpl);
+
+      return withFlights.replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
         values[key] !== undefined ? values[key] : m
+      );
+    },
+    expandFlightBlock(tpl) {
+      const hasPerFlightKey = FLIGHT_ITEM_KEYS.some(k =>
+        tpl.includes(`{{${k}}}`)
+      );
+      if (!hasPerFlightKey) return tpl;
+
+      const flights = this.getParsedFlights();
+      const lines = tpl.split("\n");
+      const flightKeyRe = new RegExp(
+        `\\{\\{(${FLIGHT_ITEM_KEYS.join("|")})\\}\\}`
+      );
+      let firstIdx = -1;
+      let lastIdx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (flightKeyRe.test(lines[i])) {
+          if (firstIdx === -1) firstIdx = i;
+          lastIdx = i;
+        }
+      }
+      if (firstIdx === -1) return tpl;
+
+      if (!flights.length) {
+        return [
+          ...lines.slice(0, firstIdx),
+          ...lines.slice(lastIdx + 1)
+        ].join("\n");
+      }
+
+      const blockLines = lines.slice(firstIdx, lastIdx + 1);
+      const blockTpl = blockLines.join("\n");
+      const rendered = flights
+        .map(f => this.renderFlightBlock(blockTpl, f))
+        .join("\n");
+
+      return [
+        ...lines.slice(0, firstIdx),
+        rendered,
+        ...lines.slice(lastIdx + 1)
+      ].join("\n");
+    },
+    renderFlightBlock(blockTpl, f) {
+      const isHe = this.selectedLang === "he";
+      const departCity = isHe
+        ? (airports[f.departAirportCode] &&
+            airports[f.departAirportCode].CityNameHe) ||
+          f.departAirport
+        : f.departAirport;
+      const destCity = isHe
+        ? (airports[f.destAirportCode] &&
+            airports[f.destAirportCode].CityNameHe) ||
+          f.destAirport
+        : f.destAirport;
+      const map = {
+        FLIGHT_DIRECTION: f.direction || "",
+        FLIGHT_AIRLINE: f.airline || "",
+        FLIGHT_NUMBER: f.flightNumber || "",
+        FLIGHT_ORIGIN_CITY: departCity || "",
+        FLIGHT_ORIGIN_CODE: f.departAirportCode || "",
+        FLIGHT_DEST_CITY: destCity || "",
+        FLIGHT_DEST_CODE: f.destAirportCode || "",
+        FLIGHT_DEPART_DAY: this.$t(`${f.departDay}`),
+        FLIGHT_DEPART_DATE: f.departDateNumberOnlyStr || "",
+        FLIGHT_DEPART_MONTH: this.$t(f.departMonth),
+        FLIGHT_DEPART_TIME: f.departTime || "",
+        FLIGHT_ARRIVE_DAY: this.$t(`${f.destDay}`),
+        FLIGHT_ARRIVE_DATE: f.destDateNumberStr || "",
+        FLIGHT_ARRIVE_MONTH: this.$t(f.destMonth),
+        FLIGHT_ARRIVE_TIME: f.destTime || "",
+        FLIGHT_CLASS: this.$t(f.flightClass || "") || ""
+      };
+      return blockTpl.replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
+        map[key] !== undefined ? map[key] : m
       );
     },
     getRelevantTxtStructure(part, first, second) {

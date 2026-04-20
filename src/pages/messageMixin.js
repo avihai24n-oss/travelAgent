@@ -168,6 +168,109 @@ const messageMixin = {
         return txt;
       } else return "";
     },
+    getParsedFlights() {
+      const raw = this.data.smartAmadeusCode || "";
+      if (!raw) return [];
+      const lines = raw.split("\n");
+      const flights = [];
+      for (const rawLine of lines) {
+        const splitted = this.getSplittedLine(rawLine);
+        if (!splitted) continue;
+        const f = this.parseFlightLinePure(splitted);
+        if (f) flights.push(f);
+      }
+      if (!flights.length) return [];
+      const outbound = this.$t("outbound flight");
+      const inbound = this.$t("inbound flight");
+      const other = this.$t("other destination flight");
+      let way = outbound;
+      for (let i = 0; i < flights.length; i++) {
+        flights[i].direction = way;
+        const next = flights[i + 1];
+        if (next) {
+          const gap = this.getHourDifference(flights[i], next);
+          if (24 < gap) {
+            for (let j = 0; j <= i; j++) {
+              if (flights[j].direction === inbound) {
+                flights[j].direction = other;
+                break;
+              }
+            }
+            way = inbound;
+          }
+        }
+      }
+      return flights;
+    },
+    parseFlightLinePure(splitedLine) {
+      if (!splitedLine || splitedLine.length < 11) return null;
+      try {
+        const line = {};
+        const latterOfclassOfTravel = splitedLine[3];
+        const dayNumber = splitedLine[5];
+        const airlineEntry = airlines.filter(
+          item => item.IATA === splitedLine[1]
+        )[0];
+        if (!airlineEntry) return null;
+        line.airline = airlineEntry.name;
+        line.flightNumber = `${splitedLine[1]}${splitedLine[2]}`;
+        line.departAirportCode = splitedLine[6].slice(0, 3);
+        line.destAirportCode = splitedLine[6].slice(3, 6);
+        const departInfo = index.lookupByIataCode(line.departAirportCode);
+        const destInfo = index.lookupByIataCode(line.destAirportCode);
+        if (!departInfo || !destInfo) return null;
+        line.departAirport = departInfo.city;
+        line.destAirport = destInfo.city;
+        line.departTime = `${splitedLine[8].slice(0, 2)}:${splitedLine[8].slice(
+          2,
+          4
+        )}`;
+        line.destTime = `${splitedLine[9].slice(0, 2)}:${splitedLine[9].slice(
+          2,
+          4
+        )}`;
+        line.departDate = `${splitedLine[4]}`;
+        line.destDate = `${splitedLine[10]}`;
+        line.departDay = DAYS[dayNumber - 1];
+        line.departDateNumberOnlyStr = line.departDate.substr(0, 2);
+        line.departDateNumberOnly = +line.departDate.substr(0, 2);
+        line.destDateNumberStr = line.destDate.substr(0, 2);
+        line.destDateNumberOnly = +line.destDate.substr(0, 2);
+        line.destMonth = line.destDate.substr(2, 5);
+        line.departMonth = line.departDate.substr(2, 5);
+        line.destHour = line.destTime.substr(0, 2);
+        line.destMinutes = line.destTime.substr(3, 5);
+        line.departHour = line.departTime.substr(0, 2);
+        line.departMinutes = line.departTime.substr(3, 5);
+        let flightClass;
+        for (const key in CLASSES_TYPE_MAP) {
+          if (CLASSES_TYPE_MAP[key].some(l => l === latterOfclassOfTravel)) {
+            flightClass = key;
+            break;
+          }
+        }
+        line.flightClass = flightClass;
+        if (line.departMonth === line.destMonth) {
+          line.destDay =
+            line.departDateNumberOnly !== line.destDateNumberOnly
+              ? line.departDateNumberOnly < line.destDateNumberOnly
+                ? DAYS[+dayNumber === 7 ? 0 : +dayNumber]
+                : +dayNumber === 1
+                ? DAYS[6]
+                : DAYS[dayNumber - 2]
+              : line.departDay;
+        } else if (
+          MONTHS.indexOf(line.departMonth) > MONTHS.indexOf(line.destMonth)
+        ) {
+          line.destDay = +dayNumber === 1 ? DAYS[6] : DAYS[dayNumber - 2];
+        } else {
+          line.destDay = DAYS[+dayNumber === 7 ? 6 : +dayNumber];
+        }
+        return line;
+      } catch (e) {
+        return null;
+      }
+    },
     getSplitedLineDetails(splitedLine) {
       if (!splitedLine) return;
       let line = {},
