@@ -24,16 +24,27 @@
         <span class="undo-label">{{ dir === 'rtl' ? 'בצע שוב' : 'Redo' }}</span>
       </button>
       <span class="toolbar-sep"></span>
-      <span class="toolbar-label">{{ toolbarLabel }}</span>
       <button
-        v-for="key in placeholderKeys"
-        :key="key"
         type="button"
-        class="chip-btn"
-        @mousedown.prevent="insertPlaceholder(key)"
+        class="fields-toggle"
+        @click="fieldsVisible = !fieldsVisible"
+        :aria-expanded="fieldsVisible ? 'true' : 'false'"
       >
-        {{ labelFor(key) }}
+        <span>{{ fieldsToggleLabel }}</span>
+        <span class="fields-caret" aria-hidden="true">{{ fieldsVisible ? '▴' : '▾' }}</span>
       </button>
+      <template v-if="fieldsVisible">
+        <span class="toolbar-label">{{ toolbarLabel }}</span>
+        <button
+          v-for="key in placeholderKeys"
+          :key="key"
+          type="button"
+          class="chip-btn"
+          @mousedown.prevent="insertPlaceholder(key)"
+        >
+          {{ labelFor(key) }}
+        </button>
+      </template>
     </div>
 
     <div
@@ -78,7 +89,8 @@ export default {
       history: [],
       historyIndex: -1,
       historyTimer: null,
-      applyingHistory: false
+      applyingHistory: false,
+      fieldsVisible: false
     };
   },
   beforeDestroy() {
@@ -96,6 +108,12 @@ export default {
     },
     canRedo() {
       return this.historyIndex < this.history.length - 1;
+    },
+    fieldsToggleLabel() {
+      if (this.dir === "rtl") {
+        return this.fieldsVisible ? "הסתר שדות" : "הוסף שדה";
+      }
+      return this.fieldsVisible ? "Hide fields" : "Add field";
     }
   },
   watch: {
@@ -660,6 +678,48 @@ body.body--dark .template-editor {
   height: 20px;
   background: #d0d7de;
   margin: 0 4px;
+}
+
+.template-editor .fields-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  min-height: 32px;
+}
+
+.template-editor .fields-toggle:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+}
+
+.template-editor .fields-toggle:active {
+  background: #c7d2fe;
+}
+
+.template-editor .fields-caret {
+  font-size: 12px;
+  line-height: 1;
+}
+
+body.body--dark .template-editor .fields-toggle {
+  background: #2a2a3a;
+  color: #a5b4fc;
+  border-color: #4338ca;
+}
+
+body.body--dark .template-editor .fields-toggle:hover {
+  background: #312e81;
+  border-color: #6366f1;
 }
 
 @media (max-width: 480px) {
