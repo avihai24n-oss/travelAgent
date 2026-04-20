@@ -169,38 +169,57 @@ Sincerely Yours
 📞 Mob. 972-54-5727055
 ✉️ gad@gbtil.co.il`,
     fr: `*{{CUSTOMER_NAME}}*, Shalom!
+⏰ *Validation d'émission de ton billet❗*
+👉 *{{TICKET_ISSUANCE}}*
 
-Suite à votre demande, voici l'offre pour votre prochain voyage à *{{DESTINATION}}*
+Pour faire suite à ta demande, tu trouveras ci-dessous ma *proposition actualisée* pour ton *(👤{{CUSTOMER_NAME}})* prochain voyage à *{{DESTINATION}}*
 {{ALL_NAMES}}
 
-*Itinéraire* 🌍
-{{FLIGHTS}}
+Merci de *répondre (depuis ce message WhatsApp)* avec ta *validation d'émission de ton billet* conformément au contenu de cette proposition.
 
-*Compagnie aérienne:* ({{AIRLINE_CODE}}) ✈️
+*Itinéraire* 🌍
+*{{FLIGHT_DIRECTION}}*
+{{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
+{{FLIGHT_ORIGIN_CITY}} ➡️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
+*{{FLIGHT_CLASS}}* 💺
+Dpt. {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
+Arr. {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
+
+*Compagnie:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
 
-*Classe de voyage* 💺
+*Compartiment* 💺
 *{{CLASS}}*
 
-*Tarif* 💲
+🎫 *PRIX* 💲
 {{PRICE}}
 
-*Attention:*
-Le prix peut changer tant que le billet n'est pas émis.
+*Attention:* ❗
+▪️ Le tarif ci-dessus peut changer tant que le billet n'est pas émis ❗
 
-🧳 *Bagages*
+🧳 *Franchise bagages* 🧳
 ✅ 1 bagage en soute 23 kg
 ✅ Bagage cabine
 
-⚠️ Conditions tarifaires ⚠️
-▪️ Changement: {{CHANGE_FEE}}
+💺 *Présélection sièges* 💺
+✅ Incluse
+
+⚠️ *Restrictions tarifaires* ⚠️
+▪️ Modification: {{CHANGE_FEE}}
 ▪️ Annulation: {{CANCEL_FEE}}{{CURRENCY}}
-▪️ No show: {{NO_SHOW}}
+▪️ No-show: {{NO_SHOW}}
 
-*Émission du billet:* {{TICKET_ISSUANCE}}
+*⏱️ Date d'émission du billet* ⌛
+⏰ *{{TICKET_ISSUANCE}}* ‼️
 
-Toda,
-Gad`
+Merci de répondre (depuis ce message WhatsApp) avec ta confirmation d'émission.
+
+Merci,
+Gad Elnekave
+Cordialement
+🏢 American Express Global Business Travel
+📞 Mob. 972-54-5727055
+✉️ gad@gbtil.co.il`
   }
 };
 
