@@ -296,7 +296,17 @@
           <span>WhatsApp Message Preview</span>
         </div>
         <div class="section-body">
-          <div class="preview-bubble" :class="{ 'rtl': selectedLang === 'he' }">
+          <WhatsAppPhonePreview
+            :text="whatsappMessage"
+            :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
+            :contact-name="previewContactName"
+          />
+          <q-expansion-item
+            class="edit-raw"
+            icon="edit"
+            :label="selectedLang === 'he' ? 'עריכת טקסט ידנית' : 'Edit raw text'"
+            dense
+          >
             <q-input
               :style="{ direction: selectedLang === 'he' ? 'rtl' : 'ltr' }"
               v-model="whatsappMessage"
@@ -305,7 +315,7 @@
               autogrow
               class="preview-textarea"
             />
-          </div>
+          </q-expansion-item>
           <q-btn
             @click="onRedirectToWhatsapp"
             class="send-btn"
@@ -340,8 +350,10 @@ import messageMixin from "./messageMixin";
 import { LocalStorage } from "quasar";
 import { airports } from "src/assets/iata";
 import { loadTemplate, FLIGHT_ITEM_KEYS } from "src/assets/defaultTemplates.js";
+import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
 
 export default {
+  components: { WhatsAppPhonePreview },
   mixins: [messageMixin],
   data() {
     return {
@@ -746,6 +758,10 @@ ${this.$t("farewell")}`;
   computed: {
     selectedCurrency() {
       return this.data.prices.currency.currency.selected;
+    },
+    previewContactName() {
+      const name = (this.data.travelers[0] && this.data.travelers[0].name) || "";
+      return name.trim() || (this.selectedLang === "he" ? "לקוח" : "Customer");
     },
     travelersTypeAmountMap() {
       let travelersTypeAmountMap = {};

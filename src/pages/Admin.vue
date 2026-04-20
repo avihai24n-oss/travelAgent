@@ -142,9 +142,13 @@
       </div>
 
       <!-- Preview -->
-      <div v-if="previewText" class="preview-box" :dir="currentDir">
+      <div v-if="previewText" class="preview-wrap">
         <div class="preview-label">תצוגה מקדימה (עם ערכי דוגמה):</div>
-        <pre class="preview-pre">{{ previewText }}</pre>
+        <WhatsAppPhonePreview
+          :text="previewText"
+          :dir="currentDir"
+          contact-name="Gad Elnekave"
+        />
       </div>
     </div>
 
@@ -172,6 +176,7 @@
 
 <script>
 import TemplateEditor from "src/components/TemplateEditor.vue";
+import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
 import {
   PLACEHOLDERS,
   CATEGORIES,
@@ -368,7 +373,7 @@ const PREVIEW_FLIGHTS = {
 
 export default {
   name: "AdminPage",
-  components: { TemplateEditor },
+  components: { TemplateEditor, WhatsAppPhonePreview },
   data() {
     return {
       authed: false,
@@ -695,15 +700,8 @@ body.body--dark .banner-custom {
   margin-top: 12px;
 }
 
-.preview-box {
+.preview-wrap {
   margin-top: 16px;
-  background: #e7ffdb;
-  border-radius: 10px;
-  padding: 12px 14px;
-}
-
-body.body--dark .preview-box {
-  background: #1a3a2a;
 }
 
 .preview-label {
@@ -711,24 +709,11 @@ body.body--dark .preview-box {
   color: #555;
   font-weight: 600;
   margin-bottom: 6px;
+  text-align: center;
 }
 
 body.body--dark .preview-label {
   color: #bbb;
-}
-
-.preview-pre {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: inherit;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #111;
-}
-
-body.body--dark .preview-pre {
-  color: #e0e0e0;
 }
 
 .confirm-card {
