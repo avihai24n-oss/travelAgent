@@ -3,40 +3,62 @@
     <!-- Header -->
     <q-header class="modern-header">
       <q-toolbar class="toolbar-main">
-        <q-toolbar-title class="app-title">
-          <span class="title-icon">&#9992;</span>
-          Travel Agent Gad Elnekave
-        </q-toolbar-title>
-        <q-btn
-          flat
-          round
-          dense
-          icon="settings"
-          color="white"
-          size="sm"
-          aria-label="Admin"
-          @click="$router.push('/admin')"
-        />
-        <q-toggle
-          v-model="darkMode"
-          dark
-          color="amber"
-          icon="brightness_6"
-          size="sm"
-        />
+        <div class="brand">
+          <div class="brand-mark">
+            <span class="brand-mark-inner">G</span>
+          </div>
+          <div class="brand-text">
+            <div class="brand-title">Gad Elnekave</div>
+            <div class="brand-subtitle">Travel Agent</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <q-btn
+            flat
+            round
+            dense
+            icon="dark_mode"
+            color="white"
+            size="sm"
+            class="icon-btn"
+            @click="darkMode = !darkMode"
+            :aria-label="darkMode ? 'Light mode' : 'Dark mode'"
+          />
+          <q-btn
+            flat
+            round
+            dense
+            icon="settings"
+            color="white"
+            size="sm"
+            class="icon-btn"
+            aria-label="Admin"
+            @click="$router.push('/admin')"
+          />
+        </div>
       </q-toolbar>
-      <q-tabs
-        v-model="tab"
-        class="header-tabs"
-        narrow-indicator
-        dense
-        active-color="white"
-        indicator-color="white"
-        align="justify"
-      >
-        <q-tab name="info" icon="edit" label="Build" no-caps />
-        <q-tab @click="onPreview" name="preview" icon="visibility" label="Preview" no-caps />
-      </q-tabs>
+      <div class="header-tabs-wrap">
+        <div class="header-tabs-pill">
+          <button
+            type="button"
+            class="pill-tab"
+            :class="{ active: tab === 'info' }"
+            @click="tab = 'info'"
+          >
+            <span class="pill-tab-icon" aria-hidden="true">✎</span>
+            <span>Build</span>
+          </button>
+          <button
+            type="button"
+            class="pill-tab"
+            :class="{ active: tab === 'preview' }"
+            @click="tab = 'preview'; onPreview()"
+          >
+            <span class="pill-tab-icon" aria-hidden="true">◉</span>
+            <span>Preview</span>
+          </button>
+        </div>
+      </div>
     </q-header>
 
     <!-- BUILD TAB -->
@@ -45,7 +67,22 @@
       <div class="section-card amadeus-hero">
         <div class="section-header amadeus-hero-header">
           <span class="section-icon">&#9992;</span>
-          <span>Amadeus Code</span>
+          <span class="amadeus-hero-title">Amadeus Code</span>
+          <q-btn-toggle
+            v-model="selectedLang"
+            no-caps
+            rounded
+            unelevated
+            toggle-color="primary"
+            color="white"
+            text-color="primary"
+            :options="[
+              { label: 'EN', value: 'en' },
+              { label: 'FR', value: 'fr' },
+              { label: 'עב', value: 'he' }
+            ]"
+            class="lang-toggle lang-toggle-header"
+          />
         </div>
         <div class="section-body">
           <q-input
@@ -117,23 +154,6 @@
             class="q-mt-sm"
             dir="rtl"
           />
-          <div class="q-mt-md lang-inline">
-            <q-btn-toggle
-              v-model="selectedLang"
-              no-caps
-              rounded
-              unelevated
-              toggle-color="primary"
-              color="white"
-              text-color="primary"
-              :options="[
-                { label: 'English', value: 'en' },
-                { label: 'Français', value: 'fr' },
-                { label: 'עברית', value: 'he' }
-              ]"
-              class="lang-toggle lang-toggle-inline"
-            />
-          </div>
         </div>
       </div>
 
@@ -354,22 +374,8 @@
             :text="whatsappMessage"
             :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
             :contact-name="previewContactName"
+            @update:text="whatsappMessage = $event"
           />
-          <q-expansion-item
-            class="edit-raw"
-            icon="edit"
-            :label="selectedLang === 'he' ? 'עריכת טקסט ידנית' : 'Edit raw text'"
-            dense
-          >
-            <q-input
-              :style="{ direction: selectedLang === 'he' ? 'rtl' : 'ltr' }"
-              v-model="whatsappMessage"
-              filled
-              type="textarea"
-              autogrow
-              class="preview-textarea"
-            />
-          </q-expansion-item>
           <q-btn
             @click="onRedirectToWhatsapp"
             class="send-btn"
@@ -1193,7 +1199,7 @@ $font-stack: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
   'Helvetica Neue', Arial, sans-serif;
 
 .page-wrapper {
-  padding-top: 100px;
+  padding-top: 130px;
   padding-bottom: 32px;
   min-height: 100vh;
   background: #f5f7fa;
@@ -1210,29 +1216,141 @@ body.body--dark .page-wrapper {
 
 /* Header */
 .modern-header {
-  background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  background:
+    radial-gradient(1200px 300px at 10% -10%, rgba(99, 153, 255, 0.25), transparent 60%),
+    radial-gradient(900px 240px at 110% 0%, rgba(255, 180, 120, 0.15), transparent 55%),
+    linear-gradient(180deg, #0b1730 0%, #0a1226 100%);
+  box-shadow: 0 4px 24px rgba(6, 15, 35, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: saturate(140%) blur(8px);
 }
 
 .toolbar-main {
-  padding: 4px 16px;
-  min-height: 48px;
+  padding: 10px 18px 6px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.app-title {
+/* Brand */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6, #0ea5e9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.15) inset,
+    0 8px 20px rgba(59, 130, 246, 0.35);
+  flex-shrink: 0;
+}
+
+.brand-mark-inner {
   font-family: $font-stack;
+  color: #fff;
+  font-weight: 700;
   font-size: 18px;
+  letter-spacing: 0.5px;
+}
+
+.brand-text { line-height: 1.1; min-width: 0; }
+
+.brand-title {
+  font-family: $font-stack;
+  color: #fff;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.title-icon {
-  margin-right: 8px;
-  font-size: 20px;
+.brand-subtitle {
+  font-family: $font-stack;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin-top: 2px;
 }
 
-.header-tabs {
-  background: rgba(255, 255, 255, 0.1);
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px !important;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Pill tabs */
+.header-tabs-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 0 16px 12px;
+}
+
+.header-tabs-pill {
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+}
+
+.pill-tab {
+  font-family: $font-stack;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 18px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.pill-tab:hover { color: #fff; }
+
+.pill-tab.active {
+  background: linear-gradient(180deg, #ffffff, #eef2ff);
+  color: #0b1730;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.pill-tab:active { transform: scale(0.97); }
+
+.pill-tab-icon {
+  font-size: 14px;
+  line-height: 1;
 }
 
 /* Content */
@@ -1432,17 +1550,35 @@ body.body--dark .translated-names-box .text-body2 {
   color: #a5d6a7;
 }
 
-/* Inline language toggle near Amadeus */
-.lang-inline {
-  display: flex;
-  justify-content: center;
+/* Language toggle in Amadeus header */
+.amadeus-hero-title { flex: 1; }
+
+.lang-toggle-header {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: #f3f6fb;
+  border: 1px solid #d9e2ec;
+  border-radius: 999px;
+  padding: 2px;
+  overflow: hidden;
 }
 
-.lang-toggle-inline ::v-deep .q-btn {
-  font-size: 15px;
-  padding: 6px 18px;
-  min-height: 36px;
-  font-weight: 500;
+body.body--dark .lang-toggle-header {
+  background: #1c2733;
+  border-color: #344c5e;
+}
+
+.lang-toggle-header ::v-deep .q-btn {
+  min-height: 28px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  min-width: 38px;
+}
+
+.lang-toggle-header ::v-deep .q-btn__content {
+  font-family: $font-stack;
 }
 
 /* Advanced options panel */

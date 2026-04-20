@@ -13,11 +13,30 @@
             <div class="wa-name">{{ contactName }}</div>
             <div class="wa-presence">{{ dir === 'rtl' ? 'מחובר' : 'online' }}</div>
           </div>
-          <span class="wa-icon" aria-hidden="true">📞</span>
+          <button
+            type="button"
+            class="wa-edit-toggle"
+            :class="{ active: editing }"
+            :aria-label="editToggleLabel"
+            :title="editToggleLabel"
+            @click="toggleEdit"
+          >
+            <span v-if="editing" aria-hidden="true">✓</span>
+            <span v-else aria-hidden="true">✎</span>
+          </button>
         </div>
         <div class="wa-chat" :dir="dir">
-          <div class="wa-bubble wa-sent" :class="{ rtl: dir === 'rtl' }">
-            <div class="wa-bubble-text" v-html="formattedHtml"></div>
+          <div class="wa-bubble wa-sent" :class="{ rtl: dir === 'rtl', editing }">
+            <textarea
+              v-if="editing"
+              ref="editor"
+              class="wa-bubble-editor"
+              :value="text"
+              :dir="dir"
+              @input="onInput"
+              rows="1"
+            />
+            <div v-else class="wa-bubble-text" v-html="formattedHtml"></div>
             <div class="wa-bubble-meta">
               <span class="wa-bubble-time">{{ clockTime }}</span>
               <span class="wa-bubble-tick" aria-hidden="true">✓✓</span>
@@ -37,6 +56,9 @@ export default {
     dir: { type: String, default: "ltr" },
     contactName: { type: String, default: "Gad Elnekave" }
   },
+  data() {
+    return { editing: false };
+  },
   computed: {
     avatarLetter() {
       const n = (this.contactName || "G").trim();
@@ -49,9 +71,40 @@ export default {
     },
     formattedHtml() {
       return this.renderWhatsApp(this.text || "");
+    },
+    editToggleLabel() {
+      if (this.dir === "rtl") return this.editing ? "סיום עריכה" : "עריכה";
+      return this.editing ? "Done" : "Edit";
+    }
+  },
+  watch: {
+    editing(on) {
+      if (on) {
+        this.$nextTick(() => {
+          this.autoResize();
+          const el = this.$refs.editor;
+          if (el) el.focus();
+        });
+      }
+    },
+    text() {
+      if (this.editing) this.$nextTick(() => this.autoResize());
     }
   },
   methods: {
+    toggleEdit() {
+      this.editing = !this.editing;
+    },
+    onInput(e) {
+      this.$emit("update:text", e.target.value);
+      this.autoResize();
+    },
+    autoResize() {
+      const el = this.$refs.editor;
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    },
     renderWhatsApp(src) {
       let s = src
         .replace(/&/g, "&amp;")
@@ -175,6 +228,37 @@ export default {
 .wa-presence { font-size: 12px; opacity: 0.85; margin-top: 2px; }
 .wa-icon { font-size: 18px; opacity: 0.9; }
 
+.wa-edit-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.wa-edit-toggle:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.wa-edit-toggle:active {
+  transform: scale(0.94);
+}
+
+.wa-edit-toggle.active {
+  background: #fff;
+  color: #008069;
+}
+
 /* Chat area */
 .wa-chat {
   flex: 1;
@@ -238,6 +322,36 @@ export default {
   word-break: break-word;
   overflow-wrap: anywhere;
 }
+
+.wa-bubble.editing {
+  background: #fff9c4;
+  box-shadow: 0 0 0 2px #fdd835, 0 1px 0.5px rgba(0, 0, 0, 0.13);
+}
+
+.wa-bubble.editing::after {
+  border-top-color: #fff9c4;
+}
+
+.wa-bubble-editor {
+  width: 100%;
+  min-height: 1.4em;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  resize: none;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+  line-height: inherit;
+  overflow: hidden;
+}
+
+.wa-bubble-editor:focus { outline: 0; }
 
 .wa-bubble-text ::v-deep b { font-weight: 700; }
 .wa-bubble-text ::v-deep i { font-style: italic; }
@@ -320,5 +434,24 @@ body.body--dark .wa-bubble-meta { color: #aebac1; }
 body.body--dark .wa-bubble-tick { color: #53bdeb; }
 body.body--dark .wa-bubble-text ::v-deep code {
   background: rgba(255, 255, 255, 0.08);
+}
+
+body.body--dark .wa-bubble.editing {
+  background: #3e3a1f;
+  box-shadow: 0 0 0 2px #fbc02d, 0 1px 0.5px rgba(0, 0, 0, 0.5);
+  color: #fff8e1;
+}
+
+body.body--dark .wa-bubble.editing::after {
+  border-top-color: #3e3a1f;
+}
+
+body.body--dark .wa-edit-toggle {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.body--dark .wa-edit-toggle.active {
+  background: #e9edef;
+  color: #202c33;
 }
 </style>
