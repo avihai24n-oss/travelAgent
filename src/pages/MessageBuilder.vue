@@ -399,7 +399,7 @@ export default {
       );
     },
     onPreview() {
-      let flightsTxt, otherTravelers, heTicketSelected, heDeadline;
+      let flightsTxt;
 
       this.data.journey = [];
       this.data.journeyCodes = {};
@@ -407,59 +407,9 @@ export default {
 
       flightsTxt = this.getAmadeusTranslate(this.data.smartAmadeusCode);
 
-      otherTravelers = this.data.travelers
-        .filter((traveler, idx) => idx !== 0)
-        .map(traveler => this.capitalizeFirstLetter(traveler.name))
-        .join(", ");
-
-      heTicketSelected = this.$t(this.data.prices["​ticket issuance"]["​ticket issuance"].selected);
-      heDeadline = this.ticketIssuanceDeadline;
-
       switch (this.selectedTemplateTab) {
         case "All":
-          if (this.selectedLang === "he") {
-            this.whatsappMessage =
-`*${this.capitalizeFirstLetter(this.data.travelers[0].name)}*, ${this.$t("shalom")}
-⏰ *נא את אישורך להנפקת כרטיסך❗*
-👈${heTicketSelected}${heDeadline ? '\n👈' + heDeadline : ''}
-
-${this.getRelevantTxtStructure("opening")}
-
-*מסלול הטיסות* 🌍
-${flightsTxt}
-
-*${this.$t("airline")} (XX) ✈️*
-*xx*
-
-*${this.$t("class of travel")} 💺*
-*${this.$t(this.data.classOfTravel) || "XX"}*
-
-*${this.$t("airfare")}*💳
-${this.airfareTxt}
-
-${this.$t("attention")}
-* יש לאשר את הכרטוס היום עד השעה ${heDeadline || "XX"} ❗
-${this.$t("price may change")}
-
-${this.$t("baggage")}
-${this.baggageList}
-
-${this.$t("seat selection")}
-
-⚠️ ${this.$t("restrictions")} ⚠️
-${this.$t("change")} ${this.changeFeeValue}
-${this.$t("cancel")} ${this.data.prices["cancel fee"].cancelFee.value}${this.selectedCurrency}
-${this.$t("no show")} ${this.noShowValue}
-
-*${this.$t("ticket issuance")}*⌛
-⏰*${heTicketSelected}*‼️${heDeadline ? '\n👈*' + heDeadline + '*' : ''}
-
-${this.$t("please pay again msg")}
-
-${this.$t("farewell")}`;
-          } else {
-            this.whatsappMessage = this.buildFromCustomTemplate(flightsTxt);
-          }
+          this.whatsappMessage = this.buildFromCustomTemplate(flightsTxt);
           break;
 
         case "Multi tickets":
@@ -532,9 +482,14 @@ ${this.$t("farewell")}`;
           ? this.allNamesTxt
           : "";
       const cancelFee = this.data.prices["cancel fee"].cancelFee.value;
-      const ticketIssuance = this.$t(
+      const ticketIssuanceBase = this.$t(
         this.data.prices["​ticket issuance"]["​ticket issuance"].selected
       );
+      const deadline =
+        langKey === "he" && this.ticketIssuanceDeadline
+          ? "\n👈" + this.ticketIssuanceDeadline
+          : "";
+      const ticketIssuance = ticketIssuanceBase + deadline;
       const classTxt = this.$t(this.data.classOfTravel) || "XX";
 
       const values = {
