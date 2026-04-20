@@ -57,12 +57,14 @@
             class="amadeus-input amadeus-input-hero"
             input-style="min-height: 220px; font-size: 18px; line-height: 1.6;"
           />
-          <div class="q-mt-sm row items-center q-gutter-sm">
+          <div class="q-mt-md row items-center q-gutter-sm translate-row">
             <q-btn
               :label="translateBtnLabel"
               icon="translate"
               color="primary"
-              outline
+              unelevated
+              size="lg"
+              class="translate-btn"
               :loading="isTranslatingNames"
               :disable="!data.smartAmadeusCode || apiStatus === 'offline'"
               @click="onTranslateNamesFromPNR"
@@ -71,7 +73,7 @@
             <q-chip
               :color="apiStatusColor"
               text-color="white"
-              size="sm"
+              size="md"
               :icon="apiStatusIcon"
               dense
             >
@@ -115,8 +117,34 @@
             class="q-mt-sm"
             dir="rtl"
           />
+          <div class="q-mt-md lang-inline">
+            <q-btn-toggle
+              v-model="selectedLang"
+              no-caps
+              rounded
+              unelevated
+              toggle-color="primary"
+              color="white"
+              text-color="primary"
+              :options="[
+                { label: 'English', value: 'en' },
+                { label: 'Français', value: 'fr' },
+                { label: 'עברית', value: 'he' }
+              ]"
+              class="lang-toggle lang-toggle-inline"
+            />
+          </div>
         </div>
       </div>
+
+      <!-- Advanced options (collapsed by default) -->
+      <q-expansion-item
+        class="section-card advanced-panel"
+        header-class="advanced-panel-header"
+        expand-separator
+        icon="tune"
+        :label="advancedOptionsLabel"
+      >
 
       <!-- Contact -->
       <div class="section-card">
@@ -311,30 +339,7 @@
         </div>
       </div>
 
-      <!-- Language Selection -->
-      <div class="section-card">
-        <div class="section-header">
-          <span class="section-icon">&#127760;</span>
-          <span>Preview Language</span>
-        </div>
-        <div class="section-body">
-          <q-btn-toggle
-            v-model="selectedLang"
-            no-caps
-            rounded
-            unelevated
-            toggle-color="primary"
-            color="white"
-            text-color="primary"
-            :options="[
-              { label: 'English', value: 'en' },
-              { label: 'French', value: 'fr' },
-              { label: 'Hebrew', value: 'he' }
-            ]"
-            class="lang-toggle"
-          />
-        </div>
-      </div>
+      </q-expansion-item>
     </div>
 
     <!-- PREVIEW TAB -->
@@ -900,6 +905,16 @@ export default {
           return isHe ? "בודק..." : isFr ? "Vérification..." : "Checking...";
       }
     },
+    advancedOptionsLabel() {
+      switch (this.selectedLang) {
+        case "he":
+          return "פרטים נוספים (אופציונלי)";
+        case "fr":
+          return "Plus d'options (optionnel)";
+        default:
+          return "More options (optional)";
+      }
+    },
     selectedCurrency() {
       return this.data.prices.currency.currency.selected;
     },
@@ -1174,11 +1189,19 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+$font-stack: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+  'Helvetica Neue', Arial, sans-serif;
+
 .page-wrapper {
   padding-top: 100px;
   padding-bottom: 32px;
   min-height: 100vh;
   background: #f5f7fa;
+  font-family: $font-stack;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body.body--dark .page-wrapper {
@@ -1197,9 +1220,10 @@ body.body--dark .page-wrapper {
 }
 
 .app-title {
-  font-size: 17px;
+  font-family: $font-stack;
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
 }
 
 .title-icon {
@@ -1213,9 +1237,9 @@ body.body--dark .page-wrapper {
 
 /* Content */
 .content-area {
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 20px 16px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -1223,8 +1247,8 @@ body.body--dark .page-wrapper {
 /* Section Cards */
 .section-card {
   background: white;
-  border-radius: 12px;
-  margin-bottom: 12px;
+  border-radius: 14px;
+  margin-bottom: 14px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
@@ -1234,15 +1258,15 @@ body.body--dark .section-card {
 }
 
 .section-header {
-  padding: 12px 16px;
+  padding: 14px 18px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 16px;
   color: #1a73e8;
   border-bottom: 1px solid #f0f0f0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  text-transform: capitalize;
+  gap: 10px;
+  letter-spacing: 0.1px;
 }
 
 body.body--dark .section-header {
@@ -1251,11 +1275,12 @@ body.body--dark .section-header {
 }
 
 .section-icon {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .section-body {
-  padding: 16px;
+  padding: 18px;
+  font-size: 15px;
 }
 
 /* Row flex for contact */
@@ -1315,24 +1340,27 @@ body.body--dark .traveler-label {
 
 /* Amadeus */
 .amadeus-input {
-  font-family: 'Roboto Mono', monospace;
-  font-size: 13px;
+  font-family: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', Menlo, monospace;
+  font-size: 14px;
 }
 
 .amadeus-hero {
   border: 2px solid #1976d2;
-  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.15);
+  box-shadow: 0 6px 24px rgba(25, 118, 210, 0.18);
+  border-radius: 18px;
 }
 
 body.body--dark .amadeus-hero {
   border-color: #64b5f6;
-  box-shadow: 0 4px 16px rgba(100, 181, 246, 0.2);
+  box-shadow: 0 6px 24px rgba(100, 181, 246, 0.22);
 }
 
 .amadeus-hero-header {
-  font-size: 18px !important;
+  font-size: 20px !important;
   font-weight: 700 !important;
   color: #1976d2;
+  padding: 18px 20px !important;
+  letter-spacing: 0.2px;
 }
 
 body.body--dark .amadeus-hero-header {
@@ -1340,17 +1368,110 @@ body.body--dark .amadeus-hero-header {
 }
 
 .amadeus-hero .section-icon {
-  font-size: 22px;
+  font-size: 24px;
+}
+
+.amadeus-hero .section-body {
+  padding: 20px;
 }
 
 .amadeus-input-hero {
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'JetBrains Mono', 'Roboto Mono', 'SF Mono', Menlo, monospace;
 }
 
 .amadeus-input-hero ::v-deep textarea {
-  font-size: 18px !important;
-  line-height: 1.6 !important;
-  min-height: 220px !important;
+  font-size: 19px !important;
+  line-height: 1.65 !important;
+  min-height: 240px !important;
+  letter-spacing: 0.3px;
+}
+
+/* Translate row */
+.translate-row {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.translate-btn ::v-deep .q-btn__content {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.translate-btn {
+  border-radius: 10px;
+  padding: 0 22px;
+}
+
+/* Translated names display */
+.translated-names-box {
+  background: #e8f5e9;
+  border-radius: 10px;
+  padding: 12px 14px;
+  border-left: 3px solid #43a047;
+}
+
+body.body--dark .translated-names-box {
+  background: #1b2e1c;
+  border-left-color: #66bb6a;
+}
+
+.translated-names-box .text-caption {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.translated-names-box .text-body2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2e7d32;
+  margin-top: 2px;
+}
+
+body.body--dark .translated-names-box .text-body2 {
+  color: #a5d6a7;
+}
+
+/* Inline language toggle near Amadeus */
+.lang-inline {
+  display: flex;
+  justify-content: center;
+}
+
+.lang-toggle-inline ::v-deep .q-btn {
+  font-size: 15px;
+  padding: 6px 18px;
+  min-height: 36px;
+  font-weight: 500;
+}
+
+/* Advanced options panel */
+.advanced-panel {
+  margin-top: 4px;
+  border: 1px dashed #cfd8dc;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.body--dark .advanced-panel {
+  border-color: #37474f;
+}
+
+.advanced-panel ::v-deep .advanced-panel-header {
+  font-family: $font-stack;
+  font-size: 15px;
+  font-weight: 500;
+  color: #607d8b;
+  padding: 14px 18px;
+  min-height: 52px;
+}
+
+body.body--dark .advanced-panel ::v-deep .advanced-panel-header {
+  color: #90a4ae;
+}
+
+.advanced-panel ::v-deep .q-expansion-item__content {
+  padding: 8px 0 0 0;
 }
 
 /* Template tabs */
