@@ -7,9 +7,9 @@ export function parseAmadeusNames(raw) {
   let match;
   NAME_LINE_RE.lastIndex = 0;
   while ((match = NAME_LINE_RE.exec(raw)) !== null) {
-    const surname = match[2].trim();
-    const firstName = match[3].trim();
-    const title = match[4].toUpperCase();
+    const surname = match[1].trim();
+    const firstName = match[2].trim();
+    const title = match[3].toUpperCase();
     const key = `${surname}|${firstName}|${title}`;
     if (seen.has(key)) continue;
     seen.add(key);
