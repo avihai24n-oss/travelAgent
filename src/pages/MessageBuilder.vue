@@ -41,6 +41,34 @@
 
     <!-- BUILD TAB -->
     <div v-if="tab === 'info'" class="content-area">
+      <!-- Amadeus Code (Primary) -->
+      <div class="section-card amadeus-hero">
+        <div class="section-header amadeus-hero-header">
+          <span class="section-icon">&#9992;</span>
+          <span>Amadeus Code</span>
+        </div>
+        <div class="section-body">
+          <q-input
+            v-model="data.smartAmadeusCode"
+            outlined
+            autogrow
+            placeholder="Paste Amadeus PNR code here..."
+            type="textarea"
+            class="amadeus-input amadeus-input-hero"
+            input-style="min-height: 220px; font-size: 18px; line-height: 1.6;"
+          />
+          <q-input
+            v-if="selectedLang === 'he'"
+            v-model="ticketIssuanceDeadline"
+            outlined
+            dense
+            label="מועד אחרון להנפקה (לדוגמה: יום א׳ 10 אוג׳ | 21:00)"
+            class="q-mt-sm"
+            dir="rtl"
+          />
+        </div>
+      </div>
+
       <!-- Contact -->
       <div class="section-card">
         <div class="section-header">
@@ -121,34 +149,6 @@
               @click="onAddTraveler"
             />
           </div>
-        </div>
-      </div>
-
-      <!-- Amadeus Code -->
-      <div class="section-card">
-        <div class="section-header">
-          <span class="section-icon">&#9992;</span>
-          <span>Amadeus Code</span>
-        </div>
-        <div class="section-body">
-          <q-input
-            v-model="data.smartAmadeusCode"
-            outlined
-            dense
-            autogrow
-            placeholder="Paste Amadeus PNR code here..."
-            type="textarea"
-            class="amadeus-input"
-          />
-          <q-input
-            v-if="selectedLang === 'he'"
-            v-model="ticketIssuanceDeadline"
-            outlined
-            dense
-            label="מועד אחרון להנפקה (לדוגמה: יום א׳ 10 אוג׳ | 21:00)"
-            class="q-mt-sm"
-            dir="rtl"
-          />
         </div>
       </div>
 
@@ -1067,6 +1067,40 @@ body.body--dark .traveler-label {
 .amadeus-input {
   font-family: 'Roboto Mono', monospace;
   font-size: 13px;
+}
+
+.amadeus-hero {
+  border: 2px solid #1976d2;
+  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.15);
+}
+
+body.body--dark .amadeus-hero {
+  border-color: #64b5f6;
+  box-shadow: 0 4px 16px rgba(100, 181, 246, 0.2);
+}
+
+.amadeus-hero-header {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #1976d2;
+}
+
+body.body--dark .amadeus-hero-header {
+  color: #64b5f6;
+}
+
+.amadeus-hero .section-icon {
+  font-size: 22px;
+}
+
+.amadeus-input-hero {
+  font-family: 'Roboto Mono', monospace;
+}
+
+.amadeus-input-hero ::v-deep textarea {
+  font-size: 18px !important;
+  line-height: 1.6 !important;
+  min-height: 220px !important;
 }
 
 /* Template tabs */
