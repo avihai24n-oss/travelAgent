@@ -6,27 +6,10 @@
 // Configuration for your app
 // https://v1.quasar.dev/quasar-cli/quasar-conf-js
 
-const fs = require('fs');
-const path = require('path');
-
-function loadEnvFile(fileName) {
-  const envPath = path.join(__dirname, fileName);
-  if (!fs.existsSync(envPath)) return {};
-  const content = fs.readFileSync(envPath, 'utf8');
-  const result = {};
-  content.split('\n').forEach(line => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) return;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx === -1) return;
-    const key = trimmed.slice(0, eqIdx).trim();
-    const value = trimmed.slice(eqIdx + 1).trim().replace(/^['"]|['"]$/g, '');
-    result[key] = value;
-  });
-  return result;
-}
-
-const envVars = Object.assign({}, loadEnvFile('.env'), loadEnvFile('.env.local'));
+// Supabase Edge Function proxy config (public values — safe to commit).
+// The OpenAI API key is stored as a secret inside the Edge Function, not here.
+const SUPABASE_URL = 'https://vvsvbiudqzislexwzzlk.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_DgRq2Y7vcF1qmqzejq9ynA_hTh8Nly7';
 
 module.exports = function (/* ctx */) {
   return {
@@ -67,7 +50,8 @@ module.exports = function (/* ctx */) {
     // Full list of options: https://v1.quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
     build: {
       env: {
-        VUE_APP_OPENAI_KEY: envVars.VUE_APP_OPENAI_KEY || ''
+        VUE_APP_SUPABASE_URL: SUPABASE_URL,
+        VUE_APP_SUPABASE_ANON_KEY: SUPABASE_ANON_KEY
       },
       vueRouterMode: 'hash', // available values: 'hash', 'history'
 

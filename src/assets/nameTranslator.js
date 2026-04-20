@@ -29,78 +29,42 @@ function titleToType(title) {
   }
 }
 
-function buildPrompt(names, targetLang) {
-  const langName = targetLang === "he" ? "Hebrew" : "French";
-  const script = targetLang === "he"
-    ? "using Hebrew script (אבגדה...)"
-    : "using French orthography with accents where appropriate";
-  const list = names
-    .map((n, i) => `${i + 1}. First name: ${n.firstName} | Surname: ${n.surname}`)
-    .join("\n");
-  return `Transliterate the following passenger names into ${langName} ${script}, preserving pronunciation as closely as possible. Common English first names should use their standard ${langName} equivalent when one exists (e.g. "John" -> standard ${langName} form). Return ONLY a JSON array of strings — one string per passenger, formatted as "FirstName Surname" in ${langName}. No explanation, no extra text.
-
-Passengers:
-${list}`;
-}
-
-export async function translateNamesWithOpenAI(names, targetLang, apiKey) {
+export async function translateNamesViaProxy(names, targetLang) {
   if (!names || !names.length) return [];
-  if (targetLang === "en") {
-    return names.map(n => {
-      const first = n.firstName.charAt(0) + n.firstName.slice(1).toLowerCase();
-      const last = n.surname.charAt(0) + n.surname.slice(1).toLowerCase();
-      return `${first} ${last}`;
-    });
-  }
-  if (!apiKey) {
-    throw new Error("missing_api_key");
+
+  const supabaseUrl = process.env.VUE_APP_SUPABASE_URL;
+  const supabaseKey = process.env.VUE_APP_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("missing_proxy_config");
   }
 
-  const body = {
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a precise transliteration assistant. You output ONLY a JSON array of strings."
-      },
-      { role: "user", content: buildPrompt(names, targetLang) }
-    ],
-    temperature: 0,
-    response_format: { type: "json_object" }
+  const payload = {
+    names: names.map(n => ({
+      firstName: n.firstName,
+      surname: n.surname,
+      title: n.title
+    })),
+    lang: targetLang
   };
 
-  body.messages[1].content +=
-    '\n\nWrap the array in a JSON object like: {"names": ["...", "..."]}';
-
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch(`${supabaseUrl}/functions/v1/translate-names`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`
+      Authorization: `Bearer ${supabaseKey}`
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(payload)
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`openai_error: ${res.status} ${errText.slice(0, 200)}`);
+    throw new Error(`proxy_error: ${res.status} ${errText.slice(0, 200)}`);
   }
 
   const data = await res.json();
-  const raw = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  if (!raw) throw new Error("empty_response");
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (e) {
-    throw new Error("invalid_json");
-  }
-
-  const arr = Array.isArray(parsed) ? parsed : parsed.names;
-  if (!Array.isArray(arr)) throw new Error("invalid_shape");
-  return arr.map(s => String(s).trim());
+  if (!Array.isArray(data.names)) throw new Error("invalid_shape");
+  return data.names.map(s => String(s).trim());
 }
 
 export function buildTravelersFromNames(parsedNames, translatedStrings) {

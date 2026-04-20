@@ -367,7 +367,7 @@ import { airports } from "src/assets/iata";
 import { loadTemplate, FLIGHT_ITEM_KEYS } from "src/assets/defaultTemplates.js";
 import {
   parseAmadeusNames,
-  translateNamesWithOpenAI,
+  translateNamesViaProxy,
   buildTravelersFromNames
 } from "src/assets/nameTranslator.js";
 import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
@@ -440,11 +440,9 @@ export default {
       this.isTranslatingNames = true;
       this.lastTranslationInfo = "";
       try {
-        const apiKey = process.env.VUE_APP_OPENAI_KEY;
-        const translated = await translateNamesWithOpenAI(
+        const translated = await translateNamesViaProxy(
           parsed,
-          this.selectedLang,
-          apiKey
+          this.selectedLang
         );
         const newTravelers = buildTravelersFromNames(parsed, translated);
         this.data.travelers = newTravelers;
@@ -455,9 +453,10 @@ export default {
           timeout: 2500
         });
       } catch (err) {
-        const msg = err && err.message === "missing_api_key"
-          ? this.missingApiKeyMsg
-          : this.translationFailedMsg;
+        const msg =
+          err && err.message === "missing_proxy_config"
+            ? this.missingApiKeyMsg
+            : this.translationFailedMsg;
         this.lastTranslationInfo = msg;
         this.$q.notify({ type: "negative", message: msg, timeout: 4000 });
         console.error("translate names error:", err);
