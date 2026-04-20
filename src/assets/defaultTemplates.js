@@ -117,38 +117,57 @@ export const DEFAULT_TEMPLATES = {
     🏢 American Express Global Business Travel
 📞 נייד: 054-5727055    ✉️ gad@gbtil.co.il`,
     en: `*{{CUSTOMER_NAME}}*, Shalom!
+⏰ *Your tickets issuance approval❗*
+👉 *{{TICKET_ISSUANCE}}*
 
-Following your request, here is my offer for your upcoming trip to *{{DESTINATION}}*
+In reply to your request, you'll find below my *Updated proposal* for your *(👤{{CUSTOMER_NAME}})* upcoming trip to *{{DESTINATION}}*
 {{ALL_NAMES}}
 
+Please, kindly *reply (from within this WhatsApp message)* with your *tickets issuance approval* accordingly with the content of this proposal.
+
 *Itinerary* 🌍
-{{FLIGHTS}}
+*{{FLIGHT_DIRECTION}}*
+{{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
+{{FLIGHT_ORIGIN_CITY}} ➡️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
+*{{FLIGHT_CLASS}}* 💺
+Dpt. {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
+Arr. {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
 
 *Airline:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
 
-*Class of Travel* 💺
+*Compartment* 💺
 *{{CLASS}}*
 
-*Airfare* 💲
+🎫 *AIRFARE* 💲
 {{PRICE}}
 
-*Attention:*
-The price may change until the ticket is issued.
+*Attention:* ❗
+▪️ Above airfare may change unless tickets are issued ❗
 
-🧳 *Baggage*
+🧳 *Baggage Allowance* 🧳
 ✅ 1 checked bag 23 kg
 ✅ Carry-on
 
-⚠️ Fare Restrictions ⚠️
+💺 *Preselected Seats* 💺
+✅ Included
+
+⚠️ *Tickets Restrictions* ⚠️
 ▪️ Change: {{CHANGE_FEE}}
 ▪️ Cancel: {{CANCEL_FEE}}{{CURRENCY}}
-▪️ No show: {{NO_SHOW}}
+▪️ No-show: {{NO_SHOW}}
 
-*Ticket issuance:* {{TICKET_ISSUANCE}}
+*⏱️ Ticket issuance date* ⌛
+⏰ *{{TICKET_ISSUANCE}}* ‼️
+
+Thanks for replying (from within this WhatsApp message) with your tickets issuance confirmation.
 
 Thanks,
-Gad`,
+Gad Elnekave
+Sincerely Yours
+🏢 American Express Global Business Travel
+📞 Mob. 972-54-5727055
+✉️ gad@gbtil.co.il`,
     fr: `*{{CUSTOMER_NAME}}*, Shalom!
 
 Suite à votre demande, voici l'offre pour votre prochain voyage à *{{DESTINATION}}*
