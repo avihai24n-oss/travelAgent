@@ -91,7 +91,8 @@ export const DEFAULT_TEMPLATES = {
 * המחיר עלול להשתנות כל עוד לא הונפק הכרטיס❗
 
 🧳 *כבודה*
-{{BAGGAGE}}
+✅ מזוודה אחת 23 ק"ג
+✅ כבודת יד
 
 *💺הושבה מראש*
 ✅ מושב סטנדרטי
@@ -130,7 +131,8 @@ Following your request, here is my offer for your upcoming trip to *{{DESTINATIO
 The price may change until the ticket is issued.
 
 🧳 *Baggage*
-{{BAGGAGE}}
+✅ 1 checked bag 23 kg
+✅ Carry-on
 
 ⚠️ Fare Restrictions ⚠️
 ▪️ Change: {{CHANGE_FEE}}
@@ -162,7 +164,8 @@ Suite à votre demande, voici l'offre pour votre prochain voyage à *{{DESTINATI
 Le prix peut changer tant que le billet n'est pas émis.
 
 🧳 *Bagages*
-{{BAGGAGE}}
+✅ 1 bagage en soute 23 kg
+✅ Bagage cabine
 
 ⚠️ Conditions tarifaires ⚠️
 ▪️ Changement: {{CHANGE_FEE}}

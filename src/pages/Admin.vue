@@ -177,6 +177,7 @@ import {
   CATEGORIES,
   LANGUAGES,
   DEFAULT_TEMPLATES,
+  FLIGHT_ITEM_KEYS,
   loadTemplate,
   saveTemplate,
   resetTemplate,
@@ -200,7 +201,7 @@ const PREVIEW_SAMPLES = {
     CLASS: "מחלקת תיירים",
     PRICE: "👈 *$500 מבוגר x2*",
     CURRENCY: "$",
-    BAGGAGE: "✅ מזוודה (23 ק\"ג)\n✅ תיק עלייה למטוס",
+    BAGGAGE: "✅ מזוודה אחת 23 ק\"ג\n✅ כבודת יד",
     CHANGE_FEE: "100$",
     CANCEL_FEE: "250",
     NO_SHOW: "טוטאלוס",
@@ -219,7 +220,7 @@ const PREVIEW_SAMPLES = {
     CLASS: "Economy",
     PRICE: "  2 adult * $500",
     CURRENCY: "$",
-    BAGGAGE: "1 checked bag (23kg)\n1 carry-on",
+    BAGGAGE: "✅ 1 checked bag 23 kg\n✅ Carry-on",
     CHANGE_FEE: "$100",
     CANCEL_FEE: "250",
     NO_SHOW: "Total loss",
@@ -238,13 +239,131 @@ const PREVIEW_SAMPLES = {
     CLASS: "Économie",
     PRICE: "  2 adulte * $500",
     CURRENCY: "$",
-    BAGGAGE: "1 bagage en soute (23kg)\n1 bagage cabine",
+    BAGGAGE: "✅ 1 bagage en soute 23 kg\n✅ Bagage cabine",
     CHANGE_FEE: "$100",
     CANCEL_FEE: "250",
     NO_SHOW: "Totalement perdu",
     TICKET_ISSUANCE: "Immédiat",
     FAREWELL: "Cordialement,\nGad Elnekave"
   }
+};
+
+// Sample per-flight data for the Preview button — round-trip TLV ↔ MAD, 2 flights.
+const PREVIEW_FLIGHTS = {
+  he: [
+    {
+      FLIGHT_DIRECTION: "טיסות הלוך 🛫",
+      FLIGHT_AIRLINE: "EL AL",
+      FLIGHT_NUMBER: "LY395",
+      FLIGHT_ORIGIN_CITY: "תל אביב",
+      FLIGHT_ORIGIN_CODE: "TLV",
+      FLIGHT_DEST_CITY: "מדריד",
+      FLIGHT_DEST_CODE: "MAD",
+      FLIGHT_DEPART_DAY: "יום ה'",
+      FLIGHT_DEPART_DATE: "17",
+      FLIGHT_DEPART_MONTH: "אפר'",
+      FLIGHT_DEPART_TIME: "05:00",
+      FLIGHT_ARRIVE_DAY: "יום ה'",
+      FLIGHT_ARRIVE_DATE: "17",
+      FLIGHT_ARRIVE_MONTH: "אפר'",
+      FLIGHT_ARRIVE_TIME: "09:20",
+      FLIGHT_CLASS: "מחלקת תיירים"
+    },
+    {
+      FLIGHT_DIRECTION: "טיסה/ות חזור 🛬",
+      FLIGHT_AIRLINE: "EL AL",
+      FLIGHT_NUMBER: "LY396",
+      FLIGHT_ORIGIN_CITY: "מדריד",
+      FLIGHT_ORIGIN_CODE: "MAD",
+      FLIGHT_DEST_CITY: "תל אביב",
+      FLIGHT_DEST_CODE: "TLV",
+      FLIGHT_DEPART_DAY: "יום א'",
+      FLIGHT_DEPART_DATE: "20",
+      FLIGHT_DEPART_MONTH: "אפר'",
+      FLIGHT_DEPART_TIME: "11:00",
+      FLIGHT_ARRIVE_DAY: "יום א'",
+      FLIGHT_ARRIVE_DATE: "20",
+      FLIGHT_ARRIVE_MONTH: "אפר'",
+      FLIGHT_ARRIVE_TIME: "16:40",
+      FLIGHT_CLASS: "מחלקת תיירים"
+    }
+  ],
+  en: [
+    {
+      FLIGHT_DIRECTION: "Outbound flights 🛫",
+      FLIGHT_AIRLINE: "EL AL",
+      FLIGHT_NUMBER: "LY395",
+      FLIGHT_ORIGIN_CITY: "Tel Aviv",
+      FLIGHT_ORIGIN_CODE: "TLV",
+      FLIGHT_DEST_CITY: "Madrid",
+      FLIGHT_DEST_CODE: "MAD",
+      FLIGHT_DEPART_DAY: "Thu",
+      FLIGHT_DEPART_DATE: "17",
+      FLIGHT_DEPART_MONTH: "APR",
+      FLIGHT_DEPART_TIME: "05:00",
+      FLIGHT_ARRIVE_DAY: "Thu",
+      FLIGHT_ARRIVE_DATE: "17",
+      FLIGHT_ARRIVE_MONTH: "APR",
+      FLIGHT_ARRIVE_TIME: "09:20",
+      FLIGHT_CLASS: "Economy"
+    },
+    {
+      FLIGHT_DIRECTION: "Inbound flights 🛬",
+      FLIGHT_AIRLINE: "EL AL",
+      FLIGHT_NUMBER: "LY396",
+      FLIGHT_ORIGIN_CITY: "Madrid",
+      FLIGHT_ORIGIN_CODE: "MAD",
+      FLIGHT_DEST_CITY: "Tel Aviv",
+      FLIGHT_DEST_CODE: "TLV",
+      FLIGHT_DEPART_DAY: "Sun",
+      FLIGHT_DEPART_DATE: "20",
+      FLIGHT_DEPART_MONTH: "APR",
+      FLIGHT_DEPART_TIME: "11:00",
+      FLIGHT_ARRIVE_DAY: "Sun",
+      FLIGHT_ARRIVE_DATE: "20",
+      FLIGHT_ARRIVE_MONTH: "APR",
+      FLIGHT_ARRIVE_TIME: "16:40",
+      FLIGHT_CLASS: "Economy"
+    }
+  ],
+  fr: [
+    {
+      FLIGHT_DIRECTION: "Vol aller 🛫",
+      FLIGHT_AIRLINE: "EL AL",
+      FLIGHT_NUMBER: "LY395",
+      FLIGHT_ORIGIN_CITY: "Tel Aviv",
+      FLIGHT_ORIGIN_CODE: "TLV",
+      FLIGHT_DEST_CITY: "Madrid",
+      FLIGHT_DEST_CODE: "MAD",
+      FLIGHT_DEPART_DAY: "jeu",
+      FLIGHT_DEPART_DATE: "17",
+      FLIGHT_DEPART_MONTH: "avr",
+      FLIGHT_DEPART_TIME: "05:00",
+      FLIGHT_ARRIVE_DAY: "jeu",
+      FLIGHT_ARRIVE_DATE: "17",
+      FLIGHT_ARRIVE_MONTH: "avr",
+      FLIGHT_ARRIVE_TIME: "09:20",
+      FLIGHT_CLASS: "Économie"
+    },
+    {
+      FLIGHT_DIRECTION: "Vol retour 🛬",
+      FLIGHT_AIRLINE: "EL AL",
+      FLIGHT_NUMBER: "LY396",
+      FLIGHT_ORIGIN_CITY: "Madrid",
+      FLIGHT_ORIGIN_CODE: "MAD",
+      FLIGHT_DEST_CITY: "Tel Aviv",
+      FLIGHT_DEST_CODE: "TLV",
+      FLIGHT_DEPART_DAY: "dim",
+      FLIGHT_DEPART_DATE: "20",
+      FLIGHT_DEPART_MONTH: "avr",
+      FLIGHT_DEPART_TIME: "11:00",
+      FLIGHT_ARRIVE_DAY: "dim",
+      FLIGHT_ARRIVE_DATE: "20",
+      FLIGHT_ARRIVE_MONTH: "avr",
+      FLIGHT_ARRIVE_TIME: "16:40",
+      FLIGHT_CLASS: "Économie"
+    }
+  ]
 };
 
 export default {
@@ -367,11 +486,49 @@ export default {
     },
     onPreview() {
       const sample = PREVIEW_SAMPLES[this.activeLang] || PREVIEW_SAMPLES.en;
-      const rendered = (this.draftValue || "").replace(
+      const flights = PREVIEW_FLIGHTS[this.activeLang] || PREVIEW_FLIGHTS.en;
+      const expanded = this.expandFlightBlockPreview(this.draftValue || "", flights);
+      const rendered = expanded.replace(
         /\{\{([A-Z_]+)\}\}/g,
         (m, key) => (sample[key] !== undefined ? sample[key] : m)
       );
       this.previewText = rendered;
+    },
+    expandFlightBlockPreview(tpl, flights) {
+      const hasPerFlightKey = FLIGHT_ITEM_KEYS.some(k =>
+        tpl.includes(`{{${k}}}`)
+      );
+      if (!hasPerFlightKey) return tpl;
+
+      const lines = tpl.split("\n");
+      const flightKeyRe = new RegExp(
+        `\\{\\{(${FLIGHT_ITEM_KEYS.join("|")})\\}\\}`
+      );
+      let firstIdx = -1;
+      let lastIdx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (flightKeyRe.test(lines[i])) {
+          if (firstIdx === -1) firstIdx = i;
+          lastIdx = i;
+        }
+      }
+      if (firstIdx === -1) return tpl;
+
+      const blockLines = lines.slice(firstIdx, lastIdx + 1);
+      const blockTpl = blockLines.join("\n");
+      const rendered = flights
+        .map(f =>
+          blockTpl.replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
+            f[key] !== undefined ? f[key] : m
+          )
+        )
+        .join("\n");
+
+      return [
+        ...lines.slice(0, firstIdx),
+        rendered,
+        ...lines.slice(lastIdx + 1)
+      ].join("\n");
     }
   }
 };
