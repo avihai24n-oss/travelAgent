@@ -112,8 +112,34 @@
         <span v-if="unsaved" class="banner-dirty">• לא נשמר</span>
       </div>
 
+      <!-- View-mode switch -->
+      <div class="view-switch" role="tablist" aria-label="מצב עריכה">
+        <button
+          type="button"
+          class="view-switch-btn"
+          :class="{ active: !showPreview }"
+          @click="showPreview = false"
+          role="tab"
+          :aria-selected="!showPreview"
+        >
+          <span class="view-switch-icon">📝</span>
+          <span>עורך טקסט</span>
+        </button>
+        <button
+          type="button"
+          class="view-switch-btn"
+          :class="{ active: showPreview }"
+          @click="showPreview = true"
+          role="tab"
+          :aria-selected="showPreview"
+        >
+          <span class="view-switch-icon">📱</span>
+          <span>תצוגה כטלפון</span>
+        </button>
+      </div>
+
       <!-- Editor -->
-      <div class="editor-card">
+      <div v-if="!showPreview" class="editor-card">
         <TemplateEditor
           ref="editor"
           :key="editorKey"
@@ -123,6 +149,21 @@
           :placeholders="PLACEHOLDERS"
           toolbar-label="הוסף שדה:"
           @input="onEditorInput"
+        />
+      </div>
+
+      <!-- Preview (replaces editor in place) -->
+      <div v-else class="preview-wrap">
+        <div class="preview-label">
+          תצוגה מקדימה (ערכי דוגמה) — לחץ ״ערוך״ לעריכה בפורמט טלפון
+        </div>
+        <WhatsAppPhonePreview
+          :text="previewText"
+          :edit-value="draftValue"
+          :dir="currentDir"
+          contact-name="Gad Elnekave"
+          edit-hint="עריכת תבנית בפורמט טלפון — כל שינוי מתעדכן גם בעורך הטקסט. לחץ ״שמור״ לשמירה."
+          @update:editValue="draftValue = $event"
         />
       </div>
 
@@ -138,30 +179,6 @@
           class="primary-btn"
           :disable="!unsaved"
           @click="onSave"
-        />
-        <q-btn
-          color="secondary"
-          label="תצוגה מקדימה"
-          icon="visibility"
-          outline
-          no-caps
-          size="md"
-          @click="onPreview"
-        />
-      </div>
-
-      <!-- Preview -->
-      <div v-if="showPreview" class="preview-wrap">
-        <div class="preview-label">
-          תצוגה מקדימה (עם ערכי דוגמה) — לחץ על העיפרון לעריכת התבנית
-        </div>
-        <WhatsAppPhonePreview
-          :text="previewText"
-          :edit-value="draftValue"
-          :dir="currentDir"
-          contact-name="Gad Elnekave"
-          edit-hint="עריכת תבנית — כל שינוי מתעדכן גם בעורך שלמעלה. לחץ ״שמור״ לשמירה."
-          @update:editValue="draftValue = $event"
         />
       </div>
 
@@ -677,9 +694,6 @@ export default {
       };
       reader.readAsText(file);
     },
-    onPreview() {
-      this.showPreview = !this.showPreview;
-    },
     expandFlightBlockPreview(tpl, flights) {
       const hasPerFlightKey = FLIGHT_ITEM_KEYS.some(k =>
         tpl.includes(`{{${k}}}`)
@@ -980,6 +994,58 @@ body.body--dark .banner-custom { background: #4a3b10; color: #fde68a; }
   color: #dc2626;
   font-weight: 700;
 }
+
+/* View-mode switch (Editor vs Phone preview) */
+.view-switch {
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  background: #fff;
+  border: 1px solid #e4e9f1;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(11, 23, 48, 0.06);
+  margin: 6px 0 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body.body--dark .view-switch {
+  background: #1e1e1e;
+  border-color: #333;
+}
+
+.view-switch-btn {
+  flex: 1;
+  font-family: $font-stack;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.view-switch-btn:hover { color: #0b1730; }
+
+.view-switch-btn:active { transform: scale(0.98); }
+
+.view-switch-btn.active {
+  background: linear-gradient(180deg, #3b82f6, #2563eb);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.32);
+}
+
+body.body--dark .view-switch-btn { color: #aaa; }
+body.body--dark .view-switch-btn:hover { color: #fff; }
+
+.view-switch-icon { font-size: 18px; line-height: 1; }
 
 /* Editor card wrapper */
 .editor-card {

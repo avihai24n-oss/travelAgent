@@ -21,8 +21,7 @@
             :title="editToggleLabel"
             @click="toggleEdit"
           >
-            <span v-if="editing" aria-hidden="true">✓</span>
-            <span v-else aria-hidden="true">✎</span>
+            {{ editToggleLabel }}
           </button>
         </div>
         <div v-if="editing && editHint" class="wa-edit-banner" :dir="dir">
@@ -81,7 +80,7 @@ export default {
       return this.editValue !== null ? this.editValue : this.text;
     },
     editToggleLabel() {
-      if (this.dir === "rtl") return this.editing ? "סיום עריכה" : "עריכה";
+      if (this.dir === "rtl") return this.editing ? "סיום" : "ערוך";
       return this.editing ? "Done" : "Edit";
     }
   },
@@ -245,21 +244,24 @@ export default {
 .wa-icon { font-size: 18px; opacity: 0.9; }
 
 .wa-edit-toggle {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  min-width: 62px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 16px;
   border: 0;
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, transform 0.1s ease, color 0.15s ease;
   flex-shrink: 0;
-  padding: 0;
+  font-family: inherit;
+  letter-spacing: 0.2px;
 }
 
 .wa-edit-toggle:hover {
