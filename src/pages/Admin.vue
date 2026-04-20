@@ -1,26 +1,36 @@
 <template>
   <q-page class="admin-page" dir="rtl">
     <q-header class="admin-header">
-      <q-toolbar>
+      <q-toolbar class="admin-toolbar">
         <q-btn
           flat
           round
           dense
           icon="arrow_back"
+          color="white"
+          class="icon-btn"
           @click="goHome"
           aria-label="חזרה"
         />
-        <q-toolbar-title class="admin-title">
-          <span>&#9881;</span>&nbsp;ניהול תבניות
-        </q-toolbar-title>
+        <div class="admin-brand">
+          <div class="admin-brand-mark">
+            <span>⚙</span>
+          </div>
+          <div class="admin-brand-text">
+            <div class="admin-brand-title">ניהול תבניות</div>
+            <div class="admin-brand-subtitle">Templates Editor</div>
+          </div>
+        </div>
         <q-btn
           v-if="authed"
           flat
+          round
           dense
           icon="logout"
-          label="יציאה"
-          no-caps
+          color="white"
+          class="icon-btn"
           @click="logout"
+          aria-label="יציאה"
         />
       </q-toolbar>
     </q-header>
@@ -55,41 +65,33 @@
 
     <!-- Admin panel -->
     <div v-else class="admin-body">
-      <!-- Category tabs -->
-      <q-tabs
-        v-model="activeCategory"
-        class="cat-tabs"
-        dense
-        no-caps
-        active-color="primary"
-        indicator-color="primary"
-        align="justify"
-      >
-        <q-tab
+      <!-- Category pill tabs -->
+      <div class="pill-tabs-wrap">
+        <button
           v-for="cat in CATEGORIES"
           :key="cat.key"
-          :name="cat.key"
-          :label="cat.label.he"
-        />
-      </q-tabs>
+          type="button"
+          class="pill-tab-admin"
+          :class="{ active: activeCategory === cat.key }"
+          @click="activeCategory = cat.key"
+        >
+          {{ cat.label.he }}
+        </button>
+      </div>
 
-      <!-- Language tabs -->
-      <q-tabs
-        v-model="activeLang"
-        class="lang-tabs"
-        dense
-        no-caps
-        active-color="primary"
-        indicator-color="primary"
-        align="justify"
-      >
-        <q-tab
+      <!-- Language pill tabs -->
+      <div class="pill-tabs-wrap pill-tabs-sub">
+        <button
           v-for="lng in LANGUAGES"
           :key="lng.key"
-          :name="lng.key"
-          :label="lng.label.he"
-        />
-      </q-tabs>
+          type="button"
+          class="pill-tab-admin pill-tab-sub"
+          :class="{ active: activeLang === lng.key }"
+          @click="activeLang = lng.key"
+        >
+          {{ lng.label.he }}
+        </button>
+      </div>
 
       <!-- Status banner -->
       <div class="status-banner" :class="isCustom ? 'banner-custom' : 'banner-default'">
@@ -101,18 +103,20 @@
       </div>
 
       <!-- Editor -->
-      <TemplateEditor
-        ref="editor"
-        :key="editorKey"
-        :value="draftValue"
-        :lang="activeLang"
-        :dir="currentDir"
-        :placeholders="PLACEHOLDERS"
-        toolbar-label="הוסף שדה:"
-        @input="onEditorInput"
-      />
+      <div class="editor-card">
+        <TemplateEditor
+          ref="editor"
+          :key="editorKey"
+          :value="draftValue"
+          :lang="activeLang"
+          :dir="currentDir"
+          :placeholders="PLACEHOLDERS"
+          toolbar-label="הוסף שדה:"
+          @input="onEditorInput"
+        />
+      </div>
 
-      <!-- Action buttons -->
+      <!-- Primary action buttons -->
       <div class="action-row">
         <q-btn
           color="primary"
@@ -120,16 +124,10 @@
           icon="save"
           unelevated
           no-caps
+          size="md"
+          class="primary-btn"
           :disable="!unsaved"
           @click="onSave"
-        />
-        <q-btn
-          color="grey-7"
-          label="שחזר ברירת מחדל"
-          icon="restore"
-          outline
-          no-caps
-          @click="onReset"
         />
         <q-btn
           color="secondary"
@@ -137,6 +135,7 @@
           icon="visibility"
           outline
           no-caps
+          size="md"
           @click="onPreview"
         />
       </div>
@@ -150,27 +149,108 @@
           contact-name="Gad Elnekave"
         />
       </div>
-    </div>
 
-    <q-dialog v-model="confirmReset">
-      <q-card class="confirm-card" dir="rtl">
-        <q-card-section class="confirm-title">שחזור ברירת מחדל</q-card-section>
-        <q-card-section class="confirm-body">
-          פעולה זו תמחק את התבנית המותאמת אישית עבור {{ currentLangLabel }}
-          ותחזיר את ברירת המחדל. להמשיך?
-        </q-card-section>
-        <q-card-actions align="left">
-          <q-btn flat label="ביטול" color="grey-7" v-close-popup no-caps />
-          <q-btn
-            unelevated
-            label="שחזר"
-            color="negative"
-            no-caps
-            @click="confirmResetAction"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+      <!-- Backup section -->
+      <q-expansion-item
+        class="section-card backup-section"
+        header-class="backup-section-header"
+        icon="cloud_download"
+        label="גיבוי ושחזור תבניות"
+      >
+        <div class="backup-body">
+          <p class="backup-info">
+            התבניות נשמרות בדפדפן הזה בלבד. מומלץ להוריד גיבוי מדי פעם
+            ולשמור אותו במקום בטוח (מייל, Drive וכו׳).
+          </p>
+          <div class="backup-actions">
+            <q-btn
+              color="primary"
+              label="הורד גיבוי"
+              icon="download"
+              outline
+              no-caps
+              @click="onDownloadBackup"
+            />
+            <q-btn
+              color="primary"
+              label="העלה גיבוי"
+              icon="upload"
+              outline
+              no-caps
+              @click="$refs.fileInput.click()"
+            />
+            <input
+              ref="fileInput"
+              type="file"
+              accept="application/json,.json"
+              class="hidden-file-input"
+              @change="onUploadBackup"
+            />
+          </div>
+
+          <div v-if="history.length" class="history-block">
+            <div class="history-title">גרסאות קודמות — {{ currentLangLabel }}</div>
+            <div class="history-list">
+              <div
+                v-for="(entry, idx) in history"
+                :key="entry.at + ':' + idx"
+                class="history-row"
+              >
+                <div class="history-meta">
+                  <span class="history-when">{{ formatTime(entry.at) }}</span>
+                  <span class="history-preview">{{ snippet(entry.value) }}</span>
+                </div>
+                <q-btn
+                  flat
+                  dense
+                  no-caps
+                  size="sm"
+                  color="primary"
+                  label="שחזר גרסה זו"
+                  icon="history"
+                  @click="restoreHistoryEntry(entry)"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </q-expansion-item>
+
+      <!-- Danger zone -->
+      <div class="danger-zone">
+        <div class="danger-header">
+          <span class="danger-icon" aria-hidden="true">⚠</span>
+          <span>אזור מסוכן</span>
+        </div>
+        <div class="danger-body">
+          <div class="danger-label">שחזור תבנית לברירת מחדל</div>
+          <div class="danger-desc">
+            פעולה זו תמחק את התבנית המותאמת אישית עבור <b>{{ currentLangLabel }}</b>
+            ותחזיר את ברירת המחדל. להפעלה, הקלד/י את המילה
+            <span class="danger-word">שחזר</span> בתיבה למטה.
+          </div>
+          <div class="danger-row">
+            <q-input
+              v-model="resetConfirmText"
+              outlined
+              dense
+              dir="rtl"
+              label="הקלד ״שחזר״ כדי לאשר"
+              class="danger-input"
+            />
+            <q-btn
+              color="negative"
+              label="שחזר ברירת מחדל"
+              icon="delete_forever"
+              unelevated
+              no-caps
+              :disable="resetConfirmText.trim() !== 'שחזר'"
+              @click="onReset"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   </q-page>
 </template>
 
@@ -186,7 +266,10 @@ import {
   loadTemplate,
   saveTemplate,
   resetTemplate,
-  hasCustomTemplate
+  hasCustomTemplate,
+  loadHistory,
+  exportAllTemplates,
+  importAllTemplates
 } from "src/assets/defaultTemplates.js";
 
 const ADMIN_PASSWORD = "gad2026";
@@ -387,8 +470,9 @@ export default {
       draftValue: "",
       savedValue: "",
       previewText: "",
-      confirmReset: false,
-      isCustom: false
+      isCustom: false,
+      resetConfirmText: "",
+      history: []
     };
   },
   computed: {
@@ -457,6 +541,8 @@ export default {
       this.draftValue = loaded;
       this.isCustom = hasCustomTemplate(cat, lang);
       this.previewText = "";
+      this.resetConfirmText = "";
+      this.history = loadHistory(cat, lang);
     },
     onEditorInput(newVal) {
       this.draftValue = newVal;
@@ -465,6 +551,7 @@ export default {
       saveTemplate(this.activeCategory, this.activeLang, this.draftValue);
       this.savedValue = this.draftValue;
       this.isCustom = true;
+      this.history = loadHistory(this.activeCategory, this.activeLang);
       this.$q.notify({
         type: "positive",
         message: "התבנית נשמרה",
@@ -473,21 +560,90 @@ export default {
       });
     },
     onReset() {
-      this.confirmReset = true;
-    },
-    confirmResetAction() {
+      if (this.resetConfirmText.trim() !== "שחזר") return;
       resetTemplate(this.activeCategory, this.activeLang);
       const def = (DEFAULT_TEMPLATES[this.activeCategory] || {})[this.activeLang] || "";
       this.savedValue = def;
       this.draftValue = def;
       this.isCustom = false;
-      this.confirmReset = false;
+      this.resetConfirmText = "";
+      this.history = loadHistory(this.activeCategory, this.activeLang);
       this.$q.notify({
         type: "info",
         message: "הוחזרה ברירת המחדל",
         position: "top",
         timeout: 1500
       });
+    },
+    restoreHistoryEntry(entry) {
+      this.draftValue = entry.value;
+      this.$q.notify({
+        type: "info",
+        message: "גרסה קודמת נטענה לעורך. לחץ ״שמור״ כדי לאמץ אותה.",
+        position: "top",
+        timeout: 3000
+      });
+    },
+    formatTime(ts) {
+      try {
+        const d = new Date(ts);
+        const pad = n => String(n).padStart(2, "0");
+        return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } catch (e) {
+        return "";
+      }
+    },
+    snippet(value) {
+      const txt = (value || "").replace(/\s+/g, " ").trim();
+      return txt.length > 60 ? txt.slice(0, 60) + "…" : txt;
+    },
+    onDownloadBackup() {
+      const payload = exportAllTemplates();
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json"
+      });
+      const url = URL.createObjectURL(blob);
+      const stamp = new Date().toISOString().slice(0, 10);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `templates-backup-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+      this.$q.notify({
+        type: "positive",
+        message: "הגיבוי הורד",
+        position: "top",
+        timeout: 1500
+      });
+    },
+    onUploadBackup(e) {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(String(reader.result || ""));
+          const count = importAllTemplates(data);
+          this.loadCurrent();
+          this.$q.notify({
+            type: "positive",
+            message: `נטענו ${count} תבניות מהגיבוי`,
+            position: "top",
+            timeout: 2000
+          });
+        } catch (err) {
+          this.$q.notify({
+            type: "negative",
+            message: "קובץ גיבוי לא תקין",
+            position: "top",
+            timeout: 2500
+          });
+        }
+      };
+      reader.readAsText(file);
     },
     onPreview() {
       const sample = PREVIEW_SAMPLES[this.activeLang] || PREVIEW_SAMPLES.en;
@@ -561,27 +717,96 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+$font-stack: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+  'Helvetica Neue', Arial, sans-serif;
+
 .admin-page {
-  padding-top: 80px;
-  padding-bottom: 48px;
+  padding-top: 90px;
+  padding-bottom: 64px;
   min-height: 100vh;
   background: #f5f7fa;
   direction: rtl;
+  font-family: $font-stack;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body.body--dark .admin-page {
   background: #121212;
 }
 
+/* Header (matches MessageBuilder header) */
 .admin-header {
-  background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+  background:
+    radial-gradient(1200px 300px at 10% -10%, rgba(99, 153, 255, 0.25), transparent 60%),
+    radial-gradient(900px 240px at 110% 0%, rgba(255, 180, 120, 0.15), transparent 55%),
+    linear-gradient(180deg, #0b1730 0%, #0a1226 100%);
+  box-shadow: 0 4px 24px rgba(6, 15, 35, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.admin-title {
+.admin-toolbar {
+  padding: 12px 18px;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.15) inset,
+    0 8px 20px rgba(99, 102, 241, 0.35);
+  flex-shrink: 0;
+}
+
+.admin-brand-title {
+  font-family: $font-stack;
+  color: #fff;
   font-size: 17px;
   font-weight: 600;
+  letter-spacing: 0.2px;
 }
 
+.admin-brand-subtitle {
+  font-family: $font-stack;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px !important;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Gate */
 .gate-wrapper {
   display: flex;
   justify-content: center;
@@ -590,11 +815,11 @@ body.body--dark .admin-page {
 
 .gate-card {
   background: #fff;
-  border-radius: 14px;
-  padding: 32px 28px;
+  border-radius: 16px;
+  padding: 36px 32px;
   width: 100%;
-  max-width: 360px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  max-width: 380px;
+  box-shadow: 0 8px 32px rgba(11, 23, 48, 0.10);
   text-align: center;
 }
 
@@ -603,67 +828,112 @@ body.body--dark .gate-card {
   color: #e0e0e0;
 }
 
-.gate-icon {
-  font-size: 36px;
-  margin-bottom: 8px;
-}
+.gate-icon { font-size: 40px; margin-bottom: 10px; }
 
 .gate-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
-  margin-bottom: 4px;
-  color: #1a73e8;
+  margin-bottom: 6px;
+  color: #0b1730;
 }
+
+body.body--dark .gate-title { color: #8ab4f8; }
 
 .gate-subtitle {
-  font-size: 13px;
+  font-size: 14px;
   color: #666;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
-body.body--dark .gate-subtitle {
-  color: #aaa;
-}
+body.body--dark .gate-subtitle { color: #aaa; }
 
-.gate-input {
-  margin-bottom: 16px;
-}
+.gate-input { margin-bottom: 16px; }
 
 .gate-btn {
   width: 100%;
-  border-radius: 8px;
-  padding: 10px;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 15px;
 }
 
+/* Body */
 .admin-body {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 20px 16px;
   width: 100%;
   box-sizing: border-box;
 }
 
-.cat-tabs,
-.lang-tabs {
+/* Pill tabs */
+.pill-tabs-wrap {
+  display: inline-flex;
+  gap: 4px;
+  padding: 5px;
   background: #fff;
-  border-radius: 10px;
+  border: 1px solid #e4e9f1;
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(11, 23, 48, 0.06);
   margin-bottom: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  flex-wrap: wrap;
 }
 
-body.body--dark .cat-tabs,
-body.body--dark .lang-tabs {
+.pill-tabs-sub {
+  margin-bottom: 14px;
+  background: #f3f6fb;
+  border-color: #d9e2ec;
+}
+
+body.body--dark .pill-tabs-wrap {
   background: #1e1e1e;
+  border-color: #333;
 }
 
+body.body--dark .pill-tabs-sub {
+  background: #1c2733;
+  border-color: #344c5e;
+}
+
+.pill-tab-admin {
+  font-family: $font-stack;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.pill-tab-admin:hover { color: #0b1730; }
+
+.pill-tab-admin.active {
+  background: linear-gradient(180deg, #3b82f6, #2563eb);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.pill-tab-sub.active {
+  background: linear-gradient(180deg, #6366f1, #4f46e5);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.pill-tab-admin:active { transform: scale(0.97); }
+
+body.body--dark .pill-tab-admin { color: #aaa; }
+body.body--dark .pill-tab-admin:hover { color: #fff; }
+
+/* Status banner */
 .status-banner {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
   margin: 12px 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -677,15 +947,8 @@ body.body--dark .lang-tabs {
   color: #92400e;
 }
 
-body.body--dark .banner-default {
-  background: #2a2a2a;
-  color: #bbb;
-}
-
-body.body--dark .banner-custom {
-  background: #4a3b10;
-  color: #fde68a;
-}
+body.body--dark .banner-default { background: #2a2a2a; color: #bbb; }
+body.body--dark .banner-custom { background: #4a3b10; color: #fde68a; }
 
 .banner-dirty {
   margin-inline-start: auto;
@@ -693,41 +956,231 @@ body.body--dark .banner-custom {
   font-weight: 700;
 }
 
+/* Editor card wrapper */
+.editor-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 1px 4px rgba(11, 23, 48, 0.08);
+  margin-top: 4px;
+}
+
+body.body--dark .editor-card { background: #1e1e1e; }
+
+/* Actions */
 .action-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 10px;
+  margin-top: 14px;
 }
 
-.preview-wrap {
-  margin-top: 16px;
+.primary-btn {
+  border-radius: 10px;
+  padding: 0 22px;
+  font-weight: 600;
+  min-height: 42px;
 }
+
+.primary-btn ::v-deep .q-btn__content { font-size: 15px; }
+
+/* Preview */
+.preview-wrap { margin-top: 20px; }
 
 .preview-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #555;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   text-align: center;
 }
 
-body.body--dark .preview-label {
-  color: #bbb;
+body.body--dark .preview-label { color: #bbb; }
+
+/* Backup section */
+.backup-section {
+  margin-top: 20px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(11, 23, 48, 0.08);
+  overflow: hidden;
 }
 
-.confirm-card {
-  min-width: 300px;
-  direction: rtl;
+body.body--dark .backup-section { background: #1e1e1e; }
+
+.backup-section ::v-deep .backup-section-header {
+  padding: 14px 18px;
+  font-family: $font-stack;
+  font-weight: 600;
+  font-size: 15px;
+  color: #1d4ed8;
 }
 
-.confirm-title {
-  font-weight: 700;
-  font-size: 16px;
-}
+body.body--dark .backup-section ::v-deep .backup-section-header { color: #8ab4f8; }
 
-.confirm-body {
-  font-size: 14px;
+.backup-body { padding: 4px 18px 18px; }
+
+.backup-info {
+  font-size: 13.5px;
+  color: #475569;
+  margin: 0 0 14px;
   line-height: 1.6;
+}
+
+body.body--dark .backup-info { color: #aab; }
+
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hidden-file-input { display: none; }
+
+.history-block {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed #d9e2ec;
+}
+
+body.body--dark .history-block { border-top-color: #2e3842; }
+
+.history-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+body.body--dark .history-title { color: #cbd5e1; }
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #eef2f7;
+}
+
+body.body--dark .history-row {
+  background: #212a34;
+  border-color: #2e3842;
+}
+
+.history-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.history-when {
+  font-size: 12.5px;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+body.body--dark .history-when { color: #94a3b8; }
+
+.history-preview {
+  font-size: 13px;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.body--dark .history-preview { color: #cbd5e1; }
+
+/* Danger zone */
+.danger-zone {
+  margin-top: 28px;
+  border: 2px solid #fca5a5;
+  border-radius: 14px;
+  background: #fff5f5;
+  overflow: hidden;
+}
+
+body.body--dark .danger-zone {
+  border-color: #7f1d1d;
+  background: #2a1515;
+}
+
+.danger-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #fee2e2, #fecaca);
+  color: #991b1b;
+  font-size: 15px;
+  font-weight: 700;
+  border-bottom: 1px solid #fca5a5;
+  letter-spacing: 0.3px;
+}
+
+body.body--dark .danger-header {
+  background: linear-gradient(180deg, #3a1414, #2a1010);
+  color: #fca5a5;
+  border-bottom-color: #7f1d1d;
+}
+
+.danger-icon { font-size: 18px; }
+
+.danger-body { padding: 16px 18px 18px; }
+
+.danger-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #7f1d1d;
+  margin-bottom: 6px;
+}
+
+body.body--dark .danger-label { color: #fecaca; }
+
+.danger-desc {
+  font-size: 13.5px;
+  color: #991b1b;
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+
+body.body--dark .danger-desc { color: #f3b0b0; }
+
+.danger-word {
+  display: inline-block;
+  padding: 0 8px;
+  background: #fecaca;
+  border-radius: 5px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+}
+
+body.body--dark .danger-word {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.danger-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.danger-input {
+  flex: 1;
+  min-width: 200px;
 }
 </style>

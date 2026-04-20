@@ -224,6 +224,8 @@ Cordialement
 };
 
 const storageKey = (category, lang) => `customTemplate:${category}:${lang}`;
+const historyKey = (category, lang) => `customTemplateHistory:${category}:${lang}`;
+const HISTORY_LIMIT = 20;
 
 export function loadTemplate(category, lang) {
   try {
@@ -237,6 +239,10 @@ export function loadTemplate(category, lang) {
 
 export function saveTemplate(category, lang, value) {
   try {
+    const prev = window.localStorage.getItem(storageKey(category, lang));
+    if (prev !== null && prev !== value) {
+      pushHistory(category, lang, prev);
+    }
     window.localStorage.setItem(storageKey(category, lang), value);
     return true;
   } catch (e) {
@@ -246,6 +252,8 @@ export function saveTemplate(category, lang, value) {
 
 export function resetTemplate(category, lang) {
   try {
+    const prev = window.localStorage.getItem(storageKey(category, lang));
+    if (prev !== null) pushHistory(category, lang, prev);
     window.localStorage.removeItem(storageKey(category, lang));
     return true;
   } catch (e) {
@@ -259,4 +267,64 @@ export function hasCustomTemplate(category, lang) {
   } catch (e) {
     return false;
   }
+}
+
+function pushHistory(category, lang, value) {
+  try {
+    const raw = window.localStorage.getItem(historyKey(category, lang));
+    const arr = raw ? JSON.parse(raw) : [];
+    arr.unshift({ at: Date.now(), value });
+    const trimmed = arr.slice(0, HISTORY_LIMIT);
+    window.localStorage.setItem(historyKey(category, lang), JSON.stringify(trimmed));
+  } catch (e) {
+    // ignore
+  }
+}
+
+export function loadHistory(category, lang) {
+  try {
+    const raw = window.localStorage.getItem(historyKey(category, lang));
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function exportAllTemplates() {
+  const payload = { version: 1, exportedAt: new Date().toISOString(), templates: {} };
+  try {
+    for (const cat of Object.keys(DEFAULT_TEMPLATES)) {
+      for (const lang of Object.keys(DEFAULT_TEMPLATES[cat])) {
+        const saved = window.localStorage.getItem(storageKey(cat, lang));
+        if (saved !== null) {
+          payload.templates[`${cat}:${lang}`] = saved;
+        }
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return payload;
+}
+
+export function importAllTemplates(payload) {
+  if (!payload || typeof payload !== "object" || !payload.templates) {
+    throw new Error("invalid_backup");
+  }
+  const entries = Object.entries(payload.templates);
+  let count = 0;
+  for (const [key, value] of entries) {
+    if (typeof value !== "string") continue;
+    const [cat, lang] = key.split(":");
+    if (!cat || !lang) continue;
+    try {
+      const prev = window.localStorage.getItem(storageKey(cat, lang));
+      if (prev !== null && prev !== value) pushHistory(cat, lang, prev);
+      window.localStorage.setItem(storageKey(cat, lang), value);
+      count++;
+    } catch (e) {
+      // skip
+    }
+  }
+  return count;
 }
