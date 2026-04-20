@@ -25,13 +25,16 @@
             <span v-else aria-hidden="true">✎</span>
           </button>
         </div>
+        <div v-if="editing && editHint" class="wa-edit-banner" :dir="dir">
+          {{ editHint }}
+        </div>
         <div class="wa-chat" :dir="dir">
           <div class="wa-bubble wa-sent" :class="{ rtl: dir === 'rtl', editing }">
             <textarea
               v-if="editing"
               ref="editor"
               class="wa-bubble-editor"
-              :value="text"
+              :value="editorValue"
               :dir="dir"
               @input="onInput"
               rows="1"
@@ -54,7 +57,9 @@ export default {
   props: {
     text: { type: String, default: "" },
     dir: { type: String, default: "ltr" },
-    contactName: { type: String, default: "Gad Elnekave" }
+    contactName: { type: String, default: "Gad Elnekave" },
+    editValue: { type: String, default: null },
+    editHint: { type: String, default: "" }
   },
   data() {
     return { editing: false };
@@ -71,6 +76,9 @@ export default {
     },
     formattedHtml() {
       return this.renderWhatsApp(this.text || "");
+    },
+    editorValue() {
+      return this.editValue !== null ? this.editValue : this.text;
     },
     editToggleLabel() {
       if (this.dir === "rtl") return this.editing ? "סיום עריכה" : "עריכה";
@@ -89,6 +97,9 @@ export default {
     },
     text() {
       if (this.editing) this.$nextTick(() => this.autoResize());
+    },
+    editValue() {
+      if (this.editing) this.$nextTick(() => this.autoResize());
     }
   },
   methods: {
@@ -96,7 +107,12 @@ export default {
       this.editing = !this.editing;
     },
     onInput(e) {
-      this.$emit("update:text", e.target.value);
+      const v = e.target.value;
+      if (this.editValue !== null) {
+        this.$emit("update:editValue", v);
+      } else {
+        this.$emit("update:text", v);
+      }
       this.autoResize();
     },
     autoResize() {
@@ -257,6 +273,24 @@ export default {
 .wa-edit-toggle.active {
   background: #fff;
   color: #008069;
+}
+
+/* Edit-mode hint banner */
+.wa-edit-banner {
+  background: #fff8e1;
+  color: #7a5800;
+  border-bottom: 1px solid #fdd835;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body.body--dark .wa-edit-banner {
+  background: #3a2f10;
+  color: #fde68a;
+  border-bottom-color: #92641b;
 }
 
 /* Chat area */

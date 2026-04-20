@@ -151,12 +151,17 @@
       </div>
 
       <!-- Preview -->
-      <div v-if="previewText" class="preview-wrap">
-        <div class="preview-label">תצוגה מקדימה (עם ערכי דוגמה):</div>
+      <div v-if="showPreview" class="preview-wrap">
+        <div class="preview-label">
+          תצוגה מקדימה (עם ערכי דוגמה) — לחץ על העיפרון לעריכת התבנית
+        </div>
         <WhatsAppPhonePreview
           :text="previewText"
+          :edit-value="draftValue"
           :dir="currentDir"
           contact-name="Gad Elnekave"
+          edit-hint="עריכת תבנית — כל שינוי מתעדכן גם בעורך שלמעלה. לחץ ״שמור״ לשמירה."
+          @update:editValue="draftValue = $event"
         />
       </div>
 
@@ -480,7 +485,7 @@ export default {
       activeLang: "he",
       draftValue: "",
       savedValue: "",
-      previewText: "",
+      showPreview: false,
       isCustom: false,
       resetConfirmText: "",
       history: [],
@@ -501,6 +506,15 @@ export default {
     },
     editorKey() {
       return `${this.activeCategory}:${this.activeLang}`;
+    },
+    previewText() {
+      const sample = PREVIEW_SAMPLES[this.activeLang] || PREVIEW_SAMPLES.en;
+      const flights = PREVIEW_FLIGHTS[this.activeLang] || PREVIEW_FLIGHTS.en;
+      const expanded = this.expandFlightBlockPreview(this.draftValue || "", flights);
+      return expanded.replace(
+        /\{\{([A-Z_]+)\}\}/g,
+        (m, key) => (sample[key] !== undefined ? sample[key] : m)
+      );
     }
   },
   watch: {
@@ -542,7 +556,7 @@ export default {
       this.authed = false;
       this.draftValue = "";
       this.savedValue = "";
-      this.previewText = "";
+      this.showPreview = false;
     },
     goHome() {
       this.$router.push("/");
@@ -559,7 +573,6 @@ export default {
       this.savedValue = loaded;
       this.draftValue = loaded;
       this.isCustom = hasCustomTemplate(cat, lang);
-      this.previewText = "";
       this.resetConfirmText = "";
       this.history = loadHistory(cat, lang);
     },
@@ -665,14 +678,7 @@ export default {
       reader.readAsText(file);
     },
     onPreview() {
-      const sample = PREVIEW_SAMPLES[this.activeLang] || PREVIEW_SAMPLES.en;
-      const flights = PREVIEW_FLIGHTS[this.activeLang] || PREVIEW_FLIGHTS.en;
-      const expanded = this.expandFlightBlockPreview(this.draftValue || "", flights);
-      const rendered = expanded.replace(
-        /\{\{([A-Z_]+)\}\}/g,
-        (m, key) => (sample[key] !== undefined ? sample[key] : m)
-      );
-      this.previewText = rendered;
+      this.showPreview = !this.showPreview;
     },
     expandFlightBlockPreview(tpl, flights) {
       const hasPerFlightKey = FLIGHT_ITEM_KEYS.some(k =>
