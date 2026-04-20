@@ -458,33 +458,7 @@ ${this.$t("please pay again msg")}
 
 ${this.$t("farewell")}`;
           } else {
-            this.whatsappMessage = `*${this.capitalizeFirstLetter(
-              this.data.travelers[0].name
-            )}*, ${this.$t("shalom")}\n\n${this.getRelevantTxtStructure(
-              "opening"
-            )}\n\n*${this.$t("itinerary")}* ${
-              this.data.details.itinerary.itinerary.selected
-            } \n${flightsTxt} ${this.ticketingOptionsTxt}
-*${this.$t("airline")}* (XX) ✈️\n  *xx*, *xx* & *xx*\n
-*${this.$t("class of travel")} 💺*\n  ${this.$t("compartment options")} \n
-*${this.$t("airfare")} 💲* \n${this.airfareTxt}\n\n${this.$t("baggage")} 🧳 ${
-              this.baggageList
-            } \n\n${this.$t("seat selection")}\n${this.mealTxt}\n${this.$t(
-              "attention"
-            )}\n${this.$t("price may change")} \n
-⚠️${this.$t("restrictions")}⚠️ \n${this.$t("change")} ${
-              this.changeFeeValue
-            } ${this.$t("p. p.")}\n${this.$t("cancel")} ${
-              this.data.prices["cancel fee"].cancelFee.value
-            }${this.selectedCurrency} ${this.$t("p. p.")} \n${this.$t(
-              "no show"
-            )} ${this.noShowValue} ${this.$t("p. p.")} \n*${this.$t(
-              "ticket issuance"
-            )}:*\n      *${this.$t(
-              this.data.prices["​ticket issuance"]["​ticket issuance"].selected
-            )}*\n${this.$t("p. p. = per person")} \n\n${this.$t(
-              "please pay again msg"
-            )} \n\n${this.$t("farewell")}`;
+            this.whatsappMessage = this.buildFromCustomTemplate(flightsTxt);
           }
           break;
 
