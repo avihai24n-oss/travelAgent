@@ -100,8 +100,7 @@
         <span v-if="unsaved" class="banner-dirty">• לא נשמר</span>
       </div>
 
-      <!-- Main template editor -->
-      <div class="section-title">תבנית ראשית</div>
+      <!-- Editor -->
       <TemplateEditor
         ref="editor"
         :key="editorKey"
@@ -147,63 +146,6 @@
         <div class="preview-label">תצוגה מקדימה (עם ערכי דוגמה):</div>
         <pre class="preview-pre">{{ previewText }}</pre>
       </div>
-
-      <!-- Sub-templates -->
-      <div class="section-title sub-title">תבניות משנה (שורה בודדת)</div>
-      <div class="sub-hint">
-        כל שורה נפרדת (טיסה, פריט כבודה, מחיר) תוצג לפי התבנית הזו וחוזרת
-        אוטומטית לכל פריט שמתקבל מקוד Amadeus.
-      </div>
-
-      <q-expansion-item
-        v-for="block in SUB_BLOCKS"
-        :key="block.key"
-        :label="block.label.he"
-        class="sub-block"
-        switch-toggle-side
-        header-class="sub-header"
-      >
-        <div class="sub-body">
-          <div v-if="subIsCustom[block.key]" class="sub-banner banner-custom">
-            ✏️ תבנית מותאמת שמורה
-            <span v-if="subUnsaved(block.key)" class="banner-dirty">• לא נשמר</span>
-          </div>
-          <div v-else class="sub-banner banner-default">
-            📄 ברירת מחדל
-            <span v-if="subUnsaved(block.key)" class="banner-dirty">• לא נשמר</span>
-          </div>
-
-          <TemplateEditor
-            :key="`${block.key}:${activeLang}`"
-            :value="subDraft[block.key]"
-            :lang="activeLang"
-            :dir="currentDir"
-            :placeholders="subPlaceholders(block.key)"
-            toolbar-label="הוסף שדה:"
-            @input="val => onSubEditorInput(block.key, val)"
-          />
-
-          <div class="action-row">
-            <q-btn
-              color="primary"
-              label="שמור"
-              icon="save"
-              unelevated
-              no-caps
-              :disable="!subUnsaved(block.key)"
-              @click="onSubSave(block.key)"
-            />
-            <q-btn
-              color="grey-7"
-              label="שחזר ברירת מחדל"
-              icon="restore"
-              outline
-              no-caps
-              @click="onSubReset(block.key)"
-            />
-          </div>
-        </div>
-      </q-expansion-item>
     </div>
 
     <q-dialog v-model="confirmReset">
@@ -232,20 +174,13 @@
 import TemplateEditor from "src/components/TemplateEditor.vue";
 import {
   PLACEHOLDERS,
-  SUB_PLACEHOLDERS,
-  SUB_BLOCKS,
   CATEGORIES,
   LANGUAGES,
   DEFAULT_TEMPLATES,
-  DEFAULT_SUB_TEMPLATES,
   loadTemplate,
   saveTemplate,
   resetTemplate,
-  hasCustomTemplate,
-  loadSubTemplate,
-  saveSubTemplate,
-  resetSubTemplate,
-  hasCustomSubTemplate
+  hasCustomTemplate
 } from "src/assets/defaultTemplates.js";
 
 const ADMIN_PASSWORD = "gad2026";
@@ -321,7 +256,6 @@ export default {
       passwordInput: "",
       passwordError: false,
       PLACEHOLDERS,
-      SUB_BLOCKS,
       CATEGORIES,
       LANGUAGES,
       activeCategory: CATEGORIES[0].key,
@@ -330,10 +264,7 @@ export default {
       savedValue: "",
       previewText: "",
       confirmReset: false,
-      isCustom: false,
-      subDraft: {},
-      subSaved: {},
-      subIsCustom: {}
+      isCustom: false
     };
   },
   computed: {
@@ -402,56 +333,6 @@ export default {
       this.draftValue = loaded;
       this.isCustom = hasCustomTemplate(cat, lang);
       this.previewText = "";
-      this.loadSubCurrent();
-    },
-    loadSubCurrent() {
-      const lang = this.activeLang;
-      const draft = {};
-      const saved = {};
-      const custom = {};
-      SUB_BLOCKS.forEach(b => {
-        const v = loadSubTemplate(b.key, lang);
-        draft[b.key] = v;
-        saved[b.key] = v;
-        custom[b.key] = hasCustomSubTemplate(b.key, lang);
-      });
-      this.subDraft = draft;
-      this.subSaved = saved;
-      this.subIsCustom = custom;
-    },
-    subPlaceholders(blockKey) {
-      return SUB_PLACEHOLDERS[blockKey] || {};
-    },
-    subUnsaved(blockKey) {
-      return this.subDraft[blockKey] !== this.subSaved[blockKey];
-    },
-    onSubEditorInput(blockKey, val) {
-      this.$set(this.subDraft, blockKey, val);
-    },
-    onSubSave(blockKey) {
-      saveSubTemplate(blockKey, this.activeLang, this.subDraft[blockKey]);
-      this.$set(this.subSaved, blockKey, this.subDraft[blockKey]);
-      this.$set(this.subIsCustom, blockKey, true);
-      this.$q.notify({
-        type: "positive",
-        message: "שורת התבנית נשמרה",
-        position: "top",
-        timeout: 1500
-      });
-    },
-    onSubReset(blockKey) {
-      resetSubTemplate(blockKey, this.activeLang);
-      const def =
-        (DEFAULT_SUB_TEMPLATES[blockKey] || {})[this.activeLang] || "";
-      this.$set(this.subSaved, blockKey, def);
-      this.$set(this.subDraft, blockKey, def);
-      this.$set(this.subIsCustom, blockKey, false);
-      this.$q.notify({
-        type: "info",
-        message: "הוחזרה ברירת המחדל",
-        position: "top",
-        timeout: 1500
-      });
     },
     onEditorInput(newVal) {
       this.draftValue = newVal;
@@ -634,55 +515,6 @@ body.body--dark .banner-custom {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1a73e8;
-  margin: 16px 0 8px;
-}
-
-.sub-title {
-  margin-top: 28px;
-}
-
-.sub-hint {
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 10px;
-  line-height: 1.5;
-}
-
-body.body--dark .sub-hint {
-  color: #aaa;
-}
-
-.sub-block {
-  background: #fff;
-  border-radius: 10px;
-  margin-bottom: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-}
-
-body.body--dark .sub-block {
-  background: #1e1e1e;
-}
-
-.sub-body {
-  padding: 12px;
-}
-
-.sub-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  margin-bottom: 10px;
-  font-size: 12px;
-  font-weight: 500;
 }
 
 .preview-box {

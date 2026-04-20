@@ -339,15 +339,7 @@ import {
 import messageMixin from "./messageMixin";
 import { LocalStorage } from "quasar";
 import { airports } from "src/assets/iata";
-import { loadTemplate, loadSubTemplate } from "src/assets/defaultTemplates.js";
-
-const TOKEN_RE = /\{\{([A-Z0-9_]+)\}\}/g;
-
-function renderTemplate(tpl, values) {
-  return String(tpl || "").replace(TOKEN_RE, (m, key) =>
-    values[key] !== undefined && values[key] !== null ? values[key] : m
-  );
-}
+import { loadTemplate } from "src/assets/defaultTemplates.js";
 
 export default {
   mixins: [messageMixin],
@@ -559,23 +551,18 @@ ${this.$t("farewell")}`;
       );
       const classTxt = this.$t(this.data.classOfTravel) || "XX";
 
-      const flightsBlock = this.renderFlightsBlock(langKey) || flightsTxt;
-      const baggageBlock = this.renderBaggageBlock(langKey);
-      const pricesBlock = this.renderPricesBlock(langKey);
-
       const values = {
         CUSTOMER_NAME: customerName,
         ALL_NAMES: allNames,
         GREETING: this.$t("shalom"),
         DESTINATION: this.journeyTxt,
-        FLIGHTS: flightsBlock,
+        FLIGHTS: flightsTxt,
         AIRLINE_NAME: "xx",
         AIRLINE_CODE: "XX",
         CLASS: classTxt,
-        PRICE: pricesBlock || this.airfareTxt,
-        PRICES: pricesBlock || this.airfareTxt,
+        PRICE: this.airfareTxt,
         CURRENCY: this.selectedCurrency,
-        BAGGAGE: baggageBlock || this.baggageList,
+        BAGGAGE: this.baggageList,
         CHANGE_FEE: this.changeFeeValue,
         CANCEL_FEE: cancelFee,
         NO_SHOW: this.noShowValue,
@@ -583,65 +570,9 @@ ${this.$t("farewell")}`;
         FAREWELL: this.$t("farewell")
       };
 
-      return renderTemplate(tpl, values);
-    },
-    renderFlightsBlock(langKey) {
-      const parsed = this.getParsedFlights(this.data.smartAmadeusCode);
-      if (!parsed || !parsed.length) return "";
-      const lineTpl = loadSubTemplate("flight_line", langKey);
-      if (!lineTpl) return "";
-      return parsed
-        .map(line => {
-          const values = {
-            FL_AIRLINE_NAME: line.airline,
-            FL_AIRLINE_CODE: line.airlineCode,
-            FL_FLIGHT_NUM: line.flightNumber,
-            FL_DEPART_CITY: line.departAirportLocal || line.departAirport,
-            FL_DEPART_CODE: line.departAirportCode,
-            FL_DEST_CITY: line.destAirportLocal || line.destAirport,
-            FL_DEST_CODE: line.destAirportCode,
-            FL_DEPART_DAY: this.$t(line.departDay) || "",
-            FL_DEPART_DATE: line.departDateNumberOnlyStr,
-            FL_DEPART_MONTH: this.$t(line.departMonth) || line.departMonth,
-            FL_DEPART_TIME: line.departTime,
-            FL_DEST_DAY: this.$t(line.destDay) || "",
-            FL_DEST_DATE: line.destDateNumberStr,
-            FL_DEST_MONTH: this.$t(line.destMonth) || line.destMonth,
-            FL_DEST_TIME: line.destTime,
-            FL_CLASS: this.$t(line.flightClass) || ""
-          };
-          return renderTemplate(lineTpl, values);
-        })
-        .join("\n\n");
-    },
-    renderBaggageBlock(langKey) {
-      const items = this.data.details.baggage.baggage.selected || [];
-      if (!items.length) return "";
-      const lineTpl = loadSubTemplate("baggage_line", langKey);
-      if (!lineTpl) return "";
-      return items
-        .map(item => renderTemplate(lineTpl, { BG_ITEM: this.$t(item) }))
-        .join("\n");
-    },
-    renderPricesBlock(langKey) {
-      const map = this.travelersTypeAmountMap;
-      if (!map || !Object.keys(map).length) return "";
-      const lineTpl = loadSubTemplate("price_line", langKey);
-      if (!lineTpl) return "";
-      return Object.keys(map)
-        .map(type => {
-          const count = map[type];
-          const priceRow = this.data.prices.price[type];
-          if (!priceRow) return "";
-          return renderTemplate(lineTpl, {
-            PR_VALUE: priceRow.value,
-            PR_CURRENCY: this.selectedCurrency,
-            PR_TRAVELER_TYPE: this.$t(type),
-            PR_COUNT: count > 1 ? ` x${count}` : ""
-          });
-        })
-        .filter(Boolean)
-        .join("\n");
+      return tpl.replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
+        values[key] !== undefined ? values[key] : m
+      );
     },
     getRelevantTxtStructure(part, first, second) {
       if (this.selectedLang === "en") {
