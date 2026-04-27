@@ -248,6 +248,67 @@ Cordialement
 const storageKey = (category, lang) => `customTemplate:${category}:${lang}`;
 const historyKey = (category, lang) => `customTemplateHistory:${category}:${lang}`;
 const HISTORY_LIMIT = 20;
+const CUSTOM_CATEGORIES_KEY = "customCategories";
+
+export const BUILT_IN_CATEGORY_KEYS = CATEGORIES.map(c => c.key);
+
+export function loadCustomCategories() {
+  try {
+    const raw = window.localStorage.getItem(CUSTOM_CATEGORIES_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(c => c && typeof c.key === "string" && c.label && typeof c.label.he === "string");
+  } catch (e) {
+    return [];
+  }
+}
+
+export function saveCustomCategories(arr) {
+  try {
+    window.localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(arr || []));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+export function addCustomCategory(label) {
+  const name = String(label || "").trim();
+  if (!name) return null;
+  const key = "custom_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const arr = loadCustomCategories();
+  arr.push({ key, label: { he: name, en: name, fr: name } });
+  saveCustomCategories(arr);
+  return { key, label: { he: name, en: name, fr: name } };
+}
+
+export function renameCustomCategory(key, label) {
+  const name = String(label || "").trim();
+  if (!key || !name) return false;
+  const arr = loadCustomCategories();
+  const cat = arr.find(c => c.key === key);
+  if (!cat) return false;
+  cat.label = { he: name, en: name, fr: name };
+  saveCustomCategories(arr);
+  return true;
+}
+
+export function deleteCustomCategory(key) {
+  if (!key) return false;
+  const arr = loadCustomCategories();
+  const next = arr.filter(c => c.key !== key);
+  saveCustomCategories(next);
+  try {
+    for (const lang of LANGUAGES.map(l => l.key)) {
+      window.localStorage.removeItem(storageKey(key, lang));
+      window.localStorage.removeItem(historyKey(key, lang));
+    }
+  } catch (e) {
+    // ignore
+  }
+  return true;
+}
 
 export function loadTemplate(category, lang) {
   try {
@@ -313,15 +374,23 @@ export function loadHistory(category, lang) {
 }
 
 export function exportAllTemplates() {
-  const payload = { version: 1, exportedAt: new Date().toISOString(), templates: {} };
+  const payload = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    templates: {},
+    customCategories: loadCustomCategories()
+  };
   try {
-    for (const cat of Object.keys(DEFAULT_TEMPLATES)) {
-      for (const lang of Object.keys(DEFAULT_TEMPLATES[cat])) {
-        const saved = window.localStorage.getItem(storageKey(cat, lang));
-        if (saved !== null) {
-          payload.templates[`${cat}:${lang}`] = saved;
-        }
-      }
+    const prefix = "customTemplate:";
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (!k || k.indexOf(prefix) !== 0) continue;
+      const rest = k.slice(prefix.length);
+      const sepIdx = rest.lastIndexOf(":");
+      if (sepIdx === -1) continue;
+      const value = window.localStorage.getItem(k);
+      if (value === null) continue;
+      payload.templates[rest] = value;
     }
   } catch (e) {
     // ignore
@@ -333,11 +402,21 @@ export function importAllTemplates(payload) {
   if (!payload || typeof payload !== "object" || !payload.templates) {
     throw new Error("invalid_backup");
   }
+  if (Array.isArray(payload.customCategories)) {
+    saveCustomCategories(
+      payload.customCategories.filter(
+        c => c && typeof c.key === "string" && c.label && typeof c.label.he === "string"
+      )
+    );
+  }
   const entries = Object.entries(payload.templates);
   let count = 0;
   for (const [key, value] of entries) {
     if (typeof value !== "string") continue;
-    const [cat, lang] = key.split(":");
+    const sepIdx = key.lastIndexOf(":");
+    if (sepIdx === -1) continue;
+    const cat = key.slice(0, sepIdx);
+    const lang = key.slice(sepIdx + 1);
     if (!cat || !lang) continue;
     try {
       const prev = window.localStorage.getItem(storageKey(cat, lang));
