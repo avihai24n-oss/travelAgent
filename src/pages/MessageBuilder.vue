@@ -663,44 +663,46 @@ export default {
         `\\{\\{(${FLIGHT_ITEM_KEYS.join("|")})\\}\\}`
       );
 
-      const blocks = [];
-      let curStart = -1;
-      for (let i = 0; i < lines.length; i++) {
-        if (flightKeyRe.test(lines[i])) {
-          if (curStart === -1) curStart = i;
-        } else if (curStart !== -1) {
-          blocks.push({ start: curStart, end: i - 1 });
-          curStart = -1;
+      const segs = [];
+      let cur = null;
+      for (let li = 0; li < lines.length; li++) {
+        const ln = lines[li];
+        if (ln.trim() === "") {
+          if (cur) { segs.push(cur); cur = null; }
+          segs.push({ type: "blank" });
+        } else {
+          if (!cur) cur = { type: "para", lines: [], hasFlight: false };
+          cur.lines.push(ln);
+          if (flightKeyRe.test(ln)) cur.hasFlight = true;
         }
       }
-      if (curStart !== -1) blocks.push({ start: curStart, end: lines.length - 1 });
-      if (!blocks.length) return tpl;
+      if (cur) segs.push(cur);
 
-      const perBlock = blocks.map(() => []);
-      flights.forEach((f, i) => {
-        const bi = Math.min(i, blocks.length - 1);
+      const blockIdx = [];
+      segs.forEach((s, si) => {
+        if (s.type === "para" && s.hasFlight) blockIdx.push(si);
+      });
+      if (!blockIdx.length) return tpl;
+
+      const perBlock = blockIdx.map(() => []);
+      flights.forEach((f, fi) => {
+        const bi = Math.min(fi, blockIdx.length - 1);
         perBlock[bi].push(f);
       });
 
       const out = [];
-      let i = 0;
-      let bIdx = 0;
-      while (i < lines.length) {
-        if (bIdx < blocks.length && i === blocks[bIdx].start) {
-          const { start, end } = blocks[bIdx];
-          const blockTpl = lines.slice(start, end + 1).join("\n");
-          if (perBlock[bIdx].length) {
-            out.push(
-              perBlock[bIdx]
-                .map(f => this.renderFlightBlock(blockTpl, f))
-                .join("\n")
-            );
-          }
-          i = end + 1;
-          bIdx++;
-        } else {
-          out.push(lines[i]);
-          i++;
+      for (let si = 0; si < segs.length; si++) {
+        const s = segs[si];
+        if (s.type === "blank") { out.push(""); continue; }
+        const bi = blockIdx.indexOf(si);
+        if (bi === -1) {
+          out.push(s.lines.join("\n"));
+        } else if (perBlock[bi].length) {
+          out.push(
+            perBlock[bi]
+              .map(f => this.renderFlightBlock(s.lines.join("\n"), f))
+              .join("\n")
+          );
         }
       }
       return out.join("\n");

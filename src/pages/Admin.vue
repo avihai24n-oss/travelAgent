@@ -78,7 +78,7 @@
       <!-- Category pill tabs -->
       <div class="pill-tabs-wrap">
         <button
-          v-for="cat in CATEGORIES"
+          v-for="cat in categories"
           :key="cat.key"
           type="button"
           class="pill-tab-admin"
@@ -87,6 +87,38 @@
         >
           {{ cat.label.he }}
         </button>
+        <button
+          type="button"
+          class="pill-tab-admin pill-add"
+          @click="openAddCategory"
+          aria-label="הוסף קטגוריה"
+        >
+          + קטגוריה חדשה
+        </button>
+      </div>
+
+      <!-- Edit/delete strip (custom categories only) -->
+      <div v-if="!activeIsBuiltIn" class="custom-cat-actions">
+        <q-btn
+          flat
+          dense
+          no-caps
+          size="sm"
+          color="primary"
+          icon="edit"
+          label="ערוך שם"
+          @click="openEditCategory"
+        />
+        <q-btn
+          flat
+          dense
+          no-caps
+          size="sm"
+          color="negative"
+          icon="delete"
+          label="מחק קטגוריה"
+          @click="openDeleteCategory"
+        />
       </div>
 
       <!-- Language pill tabs -->
@@ -104,11 +136,9 @@
       </div>
 
       <!-- Status banner -->
-      <div class="status-banner" :class="isCustom ? 'banner-custom' : 'banner-default'">
-        <span class="banner-icon">{{ isCustom ? '✏️' : '📄' }}</span>
-        <span class="banner-text">
-          {{ isCustom ? 'תבנית מותאמת אישית (שמורה)' : 'תבנית ברירת מחדל' }}
-        </span>
+      <div class="status-banner" :class="bannerClass">
+        <span class="banner-icon">{{ bannerIcon }}</span>
+        <span class="banner-text">{{ bannerText }}</span>
         <span v-if="unsaved" class="banner-dirty">• לא נשמר</span>
       </div>
 
@@ -250,8 +280,8 @@
         </div>
       </q-expansion-item>
 
-      <!-- Danger zone -->
-      <div class="danger-zone">
+      <!-- Danger zone (only for categories that have a built-in default to restore to) -->
+      <div v-if="activeHasDefault" class="danger-zone">
         <div class="danger-header">
           <span class="danger-icon" aria-hidden="true">⚠</span>
           <span>אזור מסוכן</span>
@@ -285,6 +315,84 @@
         </div>
       </div>
     </div>
+
+    <!-- Add/edit category dialog -->
+    <q-dialog v-model="categoryDialog.open" persistent>
+      <q-card class="cat-dialog-card" dir="rtl">
+        <q-card-section class="cat-dialog-header">
+          {{ categoryDialog.mode === 'add' ? 'הוסף קטגוריה חדשה' : 'ערוך שם קטגוריה' }}
+        </q-card-section>
+        <q-card-section class="cat-dialog-body">
+          <q-input
+            v-model="categoryDialog.labelHe"
+            outlined
+            dense
+            dir="rtl"
+            label="שם בעברית (חובה)"
+            class="cat-dialog-input"
+            :error="!!categoryDialog.error"
+            :error-message="categoryDialog.error"
+            @keyup.enter="submitCategoryDialog"
+          />
+          <q-input
+            v-model="categoryDialog.labelEn"
+            outlined
+            dense
+            dir="ltr"
+            label="Name (English)"
+            class="cat-dialog-input"
+          />
+          <q-input
+            v-model="categoryDialog.labelFr"
+            outlined
+            dense
+            dir="ltr"
+            label="Nom (Français)"
+            class="cat-dialog-input"
+          />
+          <div class="cat-dialog-hint">
+            השמות באנגלית/צרפתית הם אופציונליים — אם תשאיר ריק נשתמש בעברית.
+          </div>
+        </q-card-section>
+        <q-card-actions align="right" class="cat-dialog-actions">
+          <q-btn flat no-caps label="ביטול" @click="closeCategoryDialog" />
+          <q-btn
+            color="primary"
+            unelevated
+            no-caps
+            :label="categoryDialog.mode === 'add' ? 'הוסף' : 'שמור'"
+            @click="submitCategoryDialog"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Delete category confirm dialog -->
+    <q-dialog v-model="deleteDialog.open" persistent>
+      <q-card class="cat-dialog-card" dir="rtl">
+        <q-card-section class="cat-dialog-header danger-header-text">
+          מחיקת קטגוריה
+        </q-card-section>
+        <q-card-section class="cat-dialog-body">
+          <div class="cat-delete-text">
+            האם למחוק את הקטגוריה <b>{{ deleteTargetLabel }}</b>?
+            פעולה זו תמחק גם את כל התבניות וההיסטוריה שלה בכל השפות.
+            <br />הפעולה אינה הפיכה.
+          </div>
+        </q-card-section>
+        <q-card-actions align="right" class="cat-dialog-actions">
+          <q-btn flat no-caps label="ביטול" @click="deleteDialog.open = false" />
+          <q-btn
+            color="negative"
+            unelevated
+            no-caps
+            label="מחק לצמיתות"
+            icon="delete_forever"
+            @click="confirmDeleteCategory"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -294,7 +402,6 @@ import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
 import { LocalStorage } from "quasar";
 import {
   PLACEHOLDERS,
-  CATEGORIES,
   LANGUAGES,
   DEFAULT_TEMPLATES,
   FLIGHT_ITEM_KEYS,
@@ -302,9 +409,15 @@ import {
   saveTemplate,
   resetTemplate,
   hasCustomTemplate,
+  hasDefaultTemplate,
   loadHistory,
   exportAllTemplates,
-  importAllTemplates
+  importAllTemplates,
+  getAllCategories,
+  addCategory,
+  renameCategory,
+  deleteCategory,
+  isBuiltInCategory
 } from "src/assets/defaultTemplates.js";
 
 const ADMIN_PASSWORD = "gad2026";
@@ -318,7 +431,7 @@ const PREVIEW_SAMPLES = {
     GREETING: "שלום!",
     DESTINATION: "מדריד",
     FLIGHTS:
-      "*טיסות הלוך 🛫*\nEL AL – *LY395*\nתל אביב ⬅️ מדריד (MAD)\nממריא: יום ה' 17 אפר'  05:00\nנוחת: יום ה' 17 אפר'  09:20",
+      "*מסלול הטיסות 🌍*\n*טיסה/ות הלוך🛫*\nטיסת El Al - *LY543*\nתל אביב ⬅️ אתונה (ATH)\nמחלקת תיירים/עסקים/פרמיום\nממריא יום ג' 19 מאי 19:30\nנוחת    יום ג' 19 מאי 21:40\n💺 (מושב - *XX*)\n\n*טיסה/ות חזור 🛬*\nטיסת El Al - *LY542*\nאתונה (ATH) ⬅️ תל אביב\nמחלקת תיירים/עסקים/פרמיום\nממריא יום ב' 25 מאי 10:35\nנוחת    יום ב' 25 מאי 12:35\n💺(מושב - *XX*)",
     AIRLINE_NAME: "EL AL",
     AIRLINE_CODE: "LY",
     CLASS: "מחלקת תיירים",
@@ -337,7 +450,7 @@ const PREVIEW_SAMPLES = {
     GREETING: "Shalom!",
     DESTINATION: "Madrid",
     FLIGHTS:
-      "*Outbound flight 🛫*\nEL AL - *LY395*\nTel Aviv ➡️ Madrid (MAD)\nEconomy\ndpt. Thu 17 Apr  05:00\narr. Thu 17 Apr  09:20",
+      "*Itinerary 🌍*\n*Outbound flight🛫*\nEl Al - *LY543*\nTel-aviv ➡️ Athens (ATH)\nEconomy/Premium/Business Class\nDpt. Tue. 19 MAY 19:30\nArr.  Tue. 19 MAY 21:40\n💺 (Seat *XX*)\n\n*Inbound flight 🛬*\nEl Al - *LY542*\nAthens (ATH) ➡️ Tel-aviv\nEconomy/Premium/Business Class\nDpt. Mon. 25 MAY 10:35\nArr.  Mon. 25 MAY 12:35\n💺 (Seat *XX*)",
     AIRLINE_NAME: "EL AL",
     AIRLINE_CODE: "LY",
     CLASS: "Economy",
@@ -356,7 +469,7 @@ const PREVIEW_SAMPLES = {
     GREETING: "Shalom!",
     DESTINATION: "Madrid",
     FLIGHTS:
-      "*Vol aller 🛫*\nEL AL - *LY395*\nTel Aviv ➡️ Madrid (MAD)\nÉconomie\ndép. jeu 17 avr  05:00\narr. jeu 17 avr  09:20",
+      "*Itinéraire 🌍*\n*Vol aller 🛫*\nEl Al - *LY543*\nTel-aviv ➡️ Athens (ATH)\nEconomy/Premium/Business Class\nDpt. Mar 19 MAI 19:30\nArr.  Mar 19 MAI 21:40\n💺 (Siege *XX*)\n\n*Vol retour 🛬*\nEl Al - *LY542*\nAthens (ATH) ➡️ Tel-aviv (TLV)\nEconomy/Premium/Business Class\nDpt. Lun 25 MAI 10:35\nArr.  Lun 25 MAI 12:35\n💺 (Siege *XX*)",
     AIRLINE_NAME: "EL AL",
     AIRLINE_CODE: "LY",
     CLASS: "Économie",
@@ -371,119 +484,119 @@ const PREVIEW_SAMPLES = {
   }
 };
 
-// Sample per-flight data for the Preview button — round-trip TLV ↔ MAD, 2 flights.
+// Sample per-flight data for the Preview button — round-trip TLV ↔ ATH, 2 flights.
 const PREVIEW_FLIGHTS = {
   he: [
     {
-      FLIGHT_DIRECTION: "טיסות הלוך 🛫",
-      FLIGHT_AIRLINE: "EL AL",
-      FLIGHT_NUMBER: "LY395",
+      FLIGHT_DIRECTION: "טיסה/ות הלוך🛫",
+      FLIGHT_AIRLINE: "El Al",
+      FLIGHT_NUMBER: "LY543",
       FLIGHT_ORIGIN_CITY: "תל אביב",
       FLIGHT_ORIGIN_CODE: "TLV",
-      FLIGHT_DEST_CITY: "מדריד",
-      FLIGHT_DEST_CODE: "MAD",
-      FLIGHT_DEPART_DAY: "יום ה'",
-      FLIGHT_DEPART_DATE: "17",
-      FLIGHT_DEPART_MONTH: "אפר'",
-      FLIGHT_DEPART_TIME: "05:00",
-      FLIGHT_ARRIVE_DAY: "יום ה'",
-      FLIGHT_ARRIVE_DATE: "17",
-      FLIGHT_ARRIVE_MONTH: "אפר'",
-      FLIGHT_ARRIVE_TIME: "09:20",
+      FLIGHT_DEST_CITY: "אתונה",
+      FLIGHT_DEST_CODE: "ATH",
+      FLIGHT_DEPART_DAY: "יום ג'",
+      FLIGHT_DEPART_DATE: "19",
+      FLIGHT_DEPART_MONTH: "מאי",
+      FLIGHT_DEPART_TIME: "19:30",
+      FLIGHT_ARRIVE_DAY: "יום ג'",
+      FLIGHT_ARRIVE_DATE: "19",
+      FLIGHT_ARRIVE_MONTH: "מאי",
+      FLIGHT_ARRIVE_TIME: "21:40",
       FLIGHT_CLASS: "מחלקת תיירים"
     },
     {
       FLIGHT_DIRECTION: "טיסה/ות חזור 🛬",
-      FLIGHT_AIRLINE: "EL AL",
-      FLIGHT_NUMBER: "LY396",
-      FLIGHT_ORIGIN_CITY: "מדריד",
-      FLIGHT_ORIGIN_CODE: "MAD",
+      FLIGHT_AIRLINE: "El Al",
+      FLIGHT_NUMBER: "LY542",
+      FLIGHT_ORIGIN_CITY: "אתונה",
+      FLIGHT_ORIGIN_CODE: "ATH",
       FLIGHT_DEST_CITY: "תל אביב",
       FLIGHT_DEST_CODE: "TLV",
-      FLIGHT_DEPART_DAY: "יום א'",
-      FLIGHT_DEPART_DATE: "20",
-      FLIGHT_DEPART_MONTH: "אפר'",
-      FLIGHT_DEPART_TIME: "11:00",
-      FLIGHT_ARRIVE_DAY: "יום א'",
-      FLIGHT_ARRIVE_DATE: "20",
-      FLIGHT_ARRIVE_MONTH: "אפר'",
-      FLIGHT_ARRIVE_TIME: "16:40",
+      FLIGHT_DEPART_DAY: "יום ב'",
+      FLIGHT_DEPART_DATE: "25",
+      FLIGHT_DEPART_MONTH: "מאי",
+      FLIGHT_DEPART_TIME: "10:35",
+      FLIGHT_ARRIVE_DAY: "יום ב'",
+      FLIGHT_ARRIVE_DATE: "25",
+      FLIGHT_ARRIVE_MONTH: "מאי",
+      FLIGHT_ARRIVE_TIME: "12:35",
       FLIGHT_CLASS: "מחלקת תיירים"
     }
   ],
   en: [
     {
-      FLIGHT_DIRECTION: "Outbound flights 🛫",
-      FLIGHT_AIRLINE: "EL AL",
-      FLIGHT_NUMBER: "LY395",
-      FLIGHT_ORIGIN_CITY: "Tel Aviv",
+      FLIGHT_DIRECTION: "Outbound flight🛫",
+      FLIGHT_AIRLINE: "El Al",
+      FLIGHT_NUMBER: "LY543",
+      FLIGHT_ORIGIN_CITY: "Tel-aviv",
       FLIGHT_ORIGIN_CODE: "TLV",
-      FLIGHT_DEST_CITY: "Madrid",
-      FLIGHT_DEST_CODE: "MAD",
-      FLIGHT_DEPART_DAY: "Thu",
-      FLIGHT_DEPART_DATE: "17",
-      FLIGHT_DEPART_MONTH: "APR",
-      FLIGHT_DEPART_TIME: "05:00",
-      FLIGHT_ARRIVE_DAY: "Thu",
-      FLIGHT_ARRIVE_DATE: "17",
-      FLIGHT_ARRIVE_MONTH: "APR",
-      FLIGHT_ARRIVE_TIME: "09:20",
+      FLIGHT_DEST_CITY: "Athens",
+      FLIGHT_DEST_CODE: "ATH",
+      FLIGHT_DEPART_DAY: "Tue",
+      FLIGHT_DEPART_DATE: "19",
+      FLIGHT_DEPART_MONTH: "MAY",
+      FLIGHT_DEPART_TIME: "19:30",
+      FLIGHT_ARRIVE_DAY: "Tue",
+      FLIGHT_ARRIVE_DATE: "19",
+      FLIGHT_ARRIVE_MONTH: "MAY",
+      FLIGHT_ARRIVE_TIME: "21:40",
       FLIGHT_CLASS: "Economy"
     },
     {
-      FLIGHT_DIRECTION: "Inbound flights 🛬",
-      FLIGHT_AIRLINE: "EL AL",
-      FLIGHT_NUMBER: "LY396",
-      FLIGHT_ORIGIN_CITY: "Madrid",
-      FLIGHT_ORIGIN_CODE: "MAD",
-      FLIGHT_DEST_CITY: "Tel Aviv",
+      FLIGHT_DIRECTION: "Inbound flight 🛬",
+      FLIGHT_AIRLINE: "El Al",
+      FLIGHT_NUMBER: "LY542",
+      FLIGHT_ORIGIN_CITY: "Athens",
+      FLIGHT_ORIGIN_CODE: "ATH",
+      FLIGHT_DEST_CITY: "Tel-aviv",
       FLIGHT_DEST_CODE: "TLV",
-      FLIGHT_DEPART_DAY: "Sun",
-      FLIGHT_DEPART_DATE: "20",
-      FLIGHT_DEPART_MONTH: "APR",
-      FLIGHT_DEPART_TIME: "11:00",
-      FLIGHT_ARRIVE_DAY: "Sun",
-      FLIGHT_ARRIVE_DATE: "20",
-      FLIGHT_ARRIVE_MONTH: "APR",
-      FLIGHT_ARRIVE_TIME: "16:40",
+      FLIGHT_DEPART_DAY: "Mon",
+      FLIGHT_DEPART_DATE: "25",
+      FLIGHT_DEPART_MONTH: "MAY",
+      FLIGHT_DEPART_TIME: "10:35",
+      FLIGHT_ARRIVE_DAY: "Mon",
+      FLIGHT_ARRIVE_DATE: "25",
+      FLIGHT_ARRIVE_MONTH: "MAY",
+      FLIGHT_ARRIVE_TIME: "12:35",
       FLIGHT_CLASS: "Economy"
     }
   ],
   fr: [
     {
       FLIGHT_DIRECTION: "Vol aller 🛫",
-      FLIGHT_AIRLINE: "EL AL",
-      FLIGHT_NUMBER: "LY395",
-      FLIGHT_ORIGIN_CITY: "Tel Aviv",
+      FLIGHT_AIRLINE: "El Al",
+      FLIGHT_NUMBER: "LY543",
+      FLIGHT_ORIGIN_CITY: "Tel-aviv",
       FLIGHT_ORIGIN_CODE: "TLV",
-      FLIGHT_DEST_CITY: "Madrid",
-      FLIGHT_DEST_CODE: "MAD",
-      FLIGHT_DEPART_DAY: "jeu",
-      FLIGHT_DEPART_DATE: "17",
-      FLIGHT_DEPART_MONTH: "avr",
-      FLIGHT_DEPART_TIME: "05:00",
-      FLIGHT_ARRIVE_DAY: "jeu",
-      FLIGHT_ARRIVE_DATE: "17",
-      FLIGHT_ARRIVE_MONTH: "avr",
-      FLIGHT_ARRIVE_TIME: "09:20",
+      FLIGHT_DEST_CITY: "Athens",
+      FLIGHT_DEST_CODE: "ATH",
+      FLIGHT_DEPART_DAY: "Mar",
+      FLIGHT_DEPART_DATE: "19",
+      FLIGHT_DEPART_MONTH: "MAI",
+      FLIGHT_DEPART_TIME: "19:30",
+      FLIGHT_ARRIVE_DAY: "Mar",
+      FLIGHT_ARRIVE_DATE: "19",
+      FLIGHT_ARRIVE_MONTH: "MAI",
+      FLIGHT_ARRIVE_TIME: "21:40",
       FLIGHT_CLASS: "Économie"
     },
     {
       FLIGHT_DIRECTION: "Vol retour 🛬",
-      FLIGHT_AIRLINE: "EL AL",
-      FLIGHT_NUMBER: "LY396",
-      FLIGHT_ORIGIN_CITY: "Madrid",
-      FLIGHT_ORIGIN_CODE: "MAD",
-      FLIGHT_DEST_CITY: "Tel Aviv",
+      FLIGHT_AIRLINE: "El Al",
+      FLIGHT_NUMBER: "LY542",
+      FLIGHT_ORIGIN_CITY: "Athens",
+      FLIGHT_ORIGIN_CODE: "ATH",
+      FLIGHT_DEST_CITY: "Tel-aviv",
       FLIGHT_DEST_CODE: "TLV",
-      FLIGHT_DEPART_DAY: "dim",
-      FLIGHT_DEPART_DATE: "20",
-      FLIGHT_DEPART_MONTH: "avr",
-      FLIGHT_DEPART_TIME: "11:00",
-      FLIGHT_ARRIVE_DAY: "dim",
-      FLIGHT_ARRIVE_DATE: "20",
-      FLIGHT_ARRIVE_MONTH: "avr",
-      FLIGHT_ARRIVE_TIME: "16:40",
+      FLIGHT_DEPART_DAY: "Lun",
+      FLIGHT_DEPART_DATE: "25",
+      FLIGHT_DEPART_MONTH: "MAI",
+      FLIGHT_DEPART_TIME: "10:35",
+      FLIGHT_ARRIVE_DAY: "Lun",
+      FLIGHT_ARRIVE_DATE: "25",
+      FLIGHT_ARRIVE_MONTH: "MAI",
+      FLIGHT_ARRIVE_TIME: "12:35",
       FLIGHT_CLASS: "Économie"
     }
   ]
@@ -498,9 +611,9 @@ export default {
       passwordInput: "",
       passwordError: false,
       PLACEHOLDERS,
-      CATEGORIES,
       LANGUAGES,
-      activeCategory: CATEGORIES[0].key,
+      categories: getAllCategories(),
+      activeCategory: "flight",
       activeLang: "he",
       draftValue: "",
       savedValue: "",
@@ -508,7 +621,20 @@ export default {
       isCustom: false,
       resetConfirmText: "",
       history: [],
-      darkMode: false
+      darkMode: false,
+      categoryDialog: {
+        open: false,
+        mode: "add",
+        editingKey: null,
+        labelHe: "",
+        labelEn: "",
+        labelFr: "",
+        error: ""
+      },
+      deleteDialog: {
+        open: false,
+        targetKey: null
+      }
     };
   },
   computed: {
@@ -519,6 +645,31 @@ export default {
     currentLangLabel() {
       const found = LANGUAGES.find(l => l.key === this.activeLang);
       return found ? found.label.he : this.activeLang;
+    },
+    activeIsBuiltIn() {
+      return isBuiltInCategory(this.activeCategory);
+    },
+    activeHasDefault() {
+      return hasDefaultTemplate(this.activeCategory);
+    },
+    bannerClass() {
+      if (this.isCustom) return "banner-custom";
+      if (!this.activeHasDefault) return "banner-empty";
+      return "banner-default";
+    },
+    bannerIcon() {
+      if (this.isCustom) return "✏️";
+      if (!this.activeHasDefault) return "📋";
+      return "📄";
+    },
+    bannerText() {
+      if (this.isCustom) return "תבנית מותאמת אישית (שמורה)";
+      if (!this.activeHasDefault) return "תבנית חדשה — הדבק או הקלד את הפורמט שלך";
+      return "תבנית ברירת מחדל";
+    },
+    deleteTargetLabel() {
+      const cat = this.categories.find(c => c.key === this.deleteDialog.targetKey);
+      return cat ? cat.label.he : "";
     },
     unsaved() {
       return this.draftValue !== this.savedValue;
@@ -683,6 +834,7 @@ export default {
         try {
           const data = JSON.parse(String(reader.result || ""));
           const count = importAllTemplates(data);
+          this.refreshCategories();
           this.loadCurrent();
           this.$q.notify({
             type: "positive",
@@ -701,6 +853,104 @@ export default {
       };
       reader.readAsText(file);
     },
+    refreshCategories() {
+      this.categories = getAllCategories();
+    },
+    openAddCategory() {
+      this.categoryDialog = {
+        open: true,
+        mode: "add",
+        editingKey: null,
+        labelHe: "",
+        labelEn: "",
+        labelFr: "",
+        error: ""
+      };
+    },
+    openEditCategory() {
+      const cat = this.categories.find(c => c.key === this.activeCategory);
+      if (!cat) return;
+      this.categoryDialog = {
+        open: true,
+        mode: "edit",
+        editingKey: cat.key,
+        labelHe: cat.label.he || "",
+        labelEn: cat.label.en === cat.label.he ? "" : (cat.label.en || ""),
+        labelFr: cat.label.fr === cat.label.he ? "" : (cat.label.fr || ""),
+        error: ""
+      };
+    },
+    closeCategoryDialog() {
+      this.categoryDialog.open = false;
+    },
+    submitCategoryDialog() {
+      const he = (this.categoryDialog.labelHe || "").trim();
+      if (!he) {
+        this.categoryDialog.error = "יש להזין שם בעברית";
+        return;
+      }
+      const label = {
+        he,
+        en: (this.categoryDialog.labelEn || "").trim(),
+        fr: (this.categoryDialog.labelFr || "").trim()
+      };
+      try {
+        if (this.categoryDialog.mode === "add") {
+          const rec = addCategory(label);
+          this.refreshCategories();
+          this.activeCategory = rec.key;
+          this.$q.notify({
+            type: "positive",
+            message: "הקטגוריה נוספה",
+            position: "top",
+            timeout: 1500
+          });
+        } else {
+          renameCategory(this.categoryDialog.editingKey, label);
+          this.refreshCategories();
+          this.$q.notify({
+            type: "positive",
+            message: "השם עודכן",
+            position: "top",
+            timeout: 1500
+          });
+        }
+        this.closeCategoryDialog();
+      } catch (e) {
+        this.categoryDialog.error = "שמירה נכשלה — נסה שנית";
+      }
+    },
+    openDeleteCategory() {
+      if (this.activeIsBuiltIn) return;
+      this.deleteDialog = { open: true, targetKey: this.activeCategory };
+    },
+    confirmDeleteCategory() {
+      const key = this.deleteDialog.targetKey;
+      if (!key || isBuiltInCategory(key)) {
+        this.deleteDialog.open = false;
+        return;
+      }
+      try {
+        deleteCategory(key);
+        this.deleteDialog.open = false;
+        this.activeCategory = "flight";
+        this.refreshCategories();
+        this.loadCurrent();
+        this.$q.notify({
+          type: "info",
+          message: "הקטגוריה נמחקה",
+          position: "top",
+          timeout: 1800
+        });
+      } catch (e) {
+        this.$q.notify({
+          type: "negative",
+          message: "מחיקה נכשלה",
+          position: "top",
+          timeout: 1800
+        });
+      }
+    },
     expandFlightBlockPreview(tpl, flights) {
       const hasPerFlightKey = FLIGHT_ITEM_KEYS.some(k =>
         tpl.includes(`{{${k}}}`)
@@ -712,48 +962,50 @@ export default {
         `\\{\\{(${FLIGHT_ITEM_KEYS.join("|")})\\}\\}`
       );
 
-      const blocks = [];
-      let curStart = -1;
-      for (let i = 0; i < lines.length; i++) {
-        if (flightKeyRe.test(lines[i])) {
-          if (curStart === -1) curStart = i;
-        } else if (curStart !== -1) {
-          blocks.push({ start: curStart, end: i - 1 });
-          curStart = -1;
+      const segs = [];
+      let cur = null;
+      for (let li = 0; li < lines.length; li++) {
+        const ln = lines[li];
+        if (ln.trim() === "") {
+          if (cur) { segs.push(cur); cur = null; }
+          segs.push({ type: "blank" });
+        } else {
+          if (!cur) cur = { type: "para", lines: [], hasFlight: false };
+          cur.lines.push(ln);
+          if (flightKeyRe.test(ln)) cur.hasFlight = true;
         }
       }
-      if (curStart !== -1) blocks.push({ start: curStart, end: lines.length - 1 });
-      if (!blocks.length) return tpl;
+      if (cur) segs.push(cur);
 
-      const perBlock = blocks.map(() => []);
-      flights.forEach((f, i) => {
-        const bi = Math.min(i, blocks.length - 1);
+      const blockIdx = [];
+      segs.forEach((s, si) => {
+        if (s.type === "para" && s.hasFlight) blockIdx.push(si);
+      });
+      if (!blockIdx.length) return tpl;
+
+      const perBlock = blockIdx.map(() => []);
+      flights.forEach((f, fi) => {
+        const bi = Math.min(fi, blockIdx.length - 1);
         perBlock[bi].push(f);
       });
 
       const out = [];
-      let i = 0;
-      let bIdx = 0;
-      while (i < lines.length) {
-        if (bIdx < blocks.length && i === blocks[bIdx].start) {
-          const { start, end } = blocks[bIdx];
-          const blockTpl = lines.slice(start, end + 1).join("\n");
-          if (perBlock[bIdx].length) {
-            out.push(
-              perBlock[bIdx]
-                .map(f =>
-                  blockTpl.replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
-                    f[key] !== undefined ? f[key] : m
-                  )
+      for (let si = 0; si < segs.length; si++) {
+        const s = segs[si];
+        if (s.type === "blank") { out.push(""); continue; }
+        const bi = blockIdx.indexOf(si);
+        if (bi === -1) {
+          out.push(s.lines.join("\n"));
+        } else if (perBlock[bi].length) {
+          out.push(
+            perBlock[bi]
+              .map(f =>
+                s.lines.join("\n").replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
+                  f[key] !== undefined ? f[key] : m
                 )
-                .join("\n")
-            );
-          }
-          i = end + 1;
-          bIdx++;
-        } else {
-          out.push(lines[i]);
-          i++;
+              )
+              .join("\n")
+          );
         }
       }
       return out.join("\n");
@@ -1280,5 +1532,100 @@ body.body--dark .danger-word {
 .danger-input {
   flex: 1;
   min-width: 200px;
+}
+
+/* Add-category pill */
+.pill-add {
+  border: 1px dashed #94a3b8 !important;
+  color: #1d4ed8 !important;
+  background: transparent;
+}
+
+body.body--dark .pill-add {
+  border-color: #4b5563 !important;
+  color: #8ab4f8 !important;
+}
+
+.pill-add:hover {
+  background: #eff6ff !important;
+  border-color: #2563eb !important;
+}
+
+body.body--dark .pill-add:hover {
+  background: #1e293b !important;
+}
+
+/* Custom category edit/delete strip */
+.custom-cat-actions {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 10px;
+  flex-wrap: wrap;
+}
+
+/* Banner for empty (newly created custom) categories */
+.banner-empty {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+body.body--dark .banner-empty {
+  background: #0c2a3a;
+  color: #7dd3fc;
+}
+
+/* Category add/edit/delete dialogs */
+.cat-dialog-card {
+  min-width: 320px;
+  max-width: 440px;
+  border-radius: 14px;
+  font-family: $font-stack;
+}
+
+body.body--dark .cat-dialog-card {
+  background: #1e1e1e;
+  color: #e0e0e0;
+}
+
+.cat-dialog-header {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0b1730;
+  padding: 18px 20px 8px;
+}
+
+body.body--dark .cat-dialog-header { color: #8ab4f8; }
+
+.cat-dialog-header.danger-header-text { color: #991b1b; }
+body.body--dark .cat-dialog-header.danger-header-text { color: #fca5a5; }
+
+.cat-dialog-body {
+  padding: 8px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cat-dialog-input { width: 100%; }
+
+.cat-dialog-hint {
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+body.body--dark .cat-dialog-hint { color: #94a3b8; }
+
+.cat-delete-text {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.7;
+}
+
+body.body--dark .cat-delete-text { color: #cbd5e1; }
+
+.cat-dialog-actions {
+  padding: 8px 16px 16px;
+  gap: 6px;
 }
 </style>
