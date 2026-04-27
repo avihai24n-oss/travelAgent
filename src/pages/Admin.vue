@@ -78,7 +78,7 @@
       <!-- Category pill tabs -->
       <div class="pill-tabs-wrap">
         <button
-          v-for="cat in categories"
+          v-for="cat in CATEGORIES"
           :key="cat.key"
           type="button"
           class="pill-tab-admin"
@@ -87,38 +87,6 @@
         >
           {{ cat.label.he }}
         </button>
-        <button
-          type="button"
-          class="pill-tab-admin pill-add"
-          @click="openAddCategory"
-          aria-label="הוסף קטגוריה"
-        >
-          + קטגוריה חדשה
-        </button>
-      </div>
-
-      <!-- Edit/delete strip (custom categories only) -->
-      <div v-if="!activeIsBuiltIn" class="custom-cat-actions">
-        <q-btn
-          flat
-          dense
-          no-caps
-          size="sm"
-          color="primary"
-          icon="edit"
-          label="ערוך שם"
-          @click="openEditCategory"
-        />
-        <q-btn
-          flat
-          dense
-          no-caps
-          size="sm"
-          color="negative"
-          icon="delete"
-          label="מחק קטגוריה"
-          @click="openDeleteCategory"
-        />
       </div>
 
       <!-- Language pill tabs -->
@@ -136,9 +104,11 @@
       </div>
 
       <!-- Status banner -->
-      <div class="status-banner" :class="bannerClass">
-        <span class="banner-icon">{{ bannerIcon }}</span>
-        <span class="banner-text">{{ bannerText }}</span>
+      <div class="status-banner" :class="isCustom ? 'banner-custom' : 'banner-default'">
+        <span class="banner-icon">{{ isCustom ? '✏️' : '📄' }}</span>
+        <span class="banner-text">
+          {{ isCustom ? 'תבנית מותאמת אישית (שמורה)' : 'תבנית ברירת מחדל' }}
+        </span>
         <span v-if="unsaved" class="banner-dirty">• לא נשמר</span>
       </div>
 
@@ -280,8 +250,8 @@
         </div>
       </q-expansion-item>
 
-      <!-- Danger zone (only for categories that have a built-in default to restore to) -->
-      <div v-if="activeHasDefault" class="danger-zone">
+      <!-- Danger zone -->
+      <div class="danger-zone">
         <div class="danger-header">
           <span class="danger-icon" aria-hidden="true">⚠</span>
           <span>אזור מסוכן</span>
@@ -315,84 +285,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Add/edit category dialog -->
-    <q-dialog v-model="categoryDialog.open" persistent>
-      <q-card class="cat-dialog-card" dir="rtl">
-        <q-card-section class="cat-dialog-header">
-          {{ categoryDialog.mode === 'add' ? 'הוסף קטגוריה חדשה' : 'ערוך שם קטגוריה' }}
-        </q-card-section>
-        <q-card-section class="cat-dialog-body">
-          <q-input
-            v-model="categoryDialog.labelHe"
-            outlined
-            dense
-            dir="rtl"
-            label="שם בעברית (חובה)"
-            class="cat-dialog-input"
-            :error="!!categoryDialog.error"
-            :error-message="categoryDialog.error"
-            @keyup.enter="submitCategoryDialog"
-          />
-          <q-input
-            v-model="categoryDialog.labelEn"
-            outlined
-            dense
-            dir="ltr"
-            label="Name (English)"
-            class="cat-dialog-input"
-          />
-          <q-input
-            v-model="categoryDialog.labelFr"
-            outlined
-            dense
-            dir="ltr"
-            label="Nom (Français)"
-            class="cat-dialog-input"
-          />
-          <div class="cat-dialog-hint">
-            השמות באנגלית/צרפתית הם אופציונליים — אם תשאיר ריק נשתמש בעברית.
-          </div>
-        </q-card-section>
-        <q-card-actions align="right" class="cat-dialog-actions">
-          <q-btn flat no-caps label="ביטול" @click="closeCategoryDialog" />
-          <q-btn
-            color="primary"
-            unelevated
-            no-caps
-            :label="categoryDialog.mode === 'add' ? 'הוסף' : 'שמור'"
-            @click="submitCategoryDialog"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <!-- Delete category confirm dialog -->
-    <q-dialog v-model="deleteDialog.open" persistent>
-      <q-card class="cat-dialog-card" dir="rtl">
-        <q-card-section class="cat-dialog-header danger-header-text">
-          מחיקת קטגוריה
-        </q-card-section>
-        <q-card-section class="cat-dialog-body">
-          <div class="cat-delete-text">
-            האם למחוק את הקטגוריה <b>{{ deleteTargetLabel }}</b>?
-            פעולה זו תמחק גם את כל התבניות וההיסטוריה שלה בכל השפות.
-            <br />הפעולה אינה הפיכה.
-          </div>
-        </q-card-section>
-        <q-card-actions align="right" class="cat-dialog-actions">
-          <q-btn flat no-caps label="ביטול" @click="deleteDialog.open = false" />
-          <q-btn
-            color="negative"
-            unelevated
-            no-caps
-            label="מחק לצמיתות"
-            icon="delete_forever"
-            @click="confirmDeleteCategory"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
   </q-page>
 </template>
 
@@ -402,6 +294,7 @@ import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
 import { LocalStorage } from "quasar";
 import {
   PLACEHOLDERS,
+  CATEGORIES,
   LANGUAGES,
   DEFAULT_TEMPLATES,
   FLIGHT_ITEM_KEYS,
@@ -409,15 +302,9 @@ import {
   saveTemplate,
   resetTemplate,
   hasCustomTemplate,
-  hasDefaultTemplate,
   loadHistory,
   exportAllTemplates,
-  importAllTemplates,
-  getAllCategories,
-  addCategory,
-  renameCategory,
-  deleteCategory,
-  isBuiltInCategory
+  importAllTemplates
 } from "src/assets/defaultTemplates.js";
 
 const ADMIN_PASSWORD = "gad2026";
@@ -611,9 +498,9 @@ export default {
       passwordInput: "",
       passwordError: false,
       PLACEHOLDERS,
+      CATEGORIES,
       LANGUAGES,
-      categories: getAllCategories(),
-      activeCategory: "flight",
+      activeCategory: CATEGORIES[0].key,
       activeLang: "he",
       draftValue: "",
       savedValue: "",
@@ -621,20 +508,7 @@ export default {
       isCustom: false,
       resetConfirmText: "",
       history: [],
-      darkMode: false,
-      categoryDialog: {
-        open: false,
-        mode: "add",
-        editingKey: null,
-        labelHe: "",
-        labelEn: "",
-        labelFr: "",
-        error: ""
-      },
-      deleteDialog: {
-        open: false,
-        targetKey: null
-      }
+      darkMode: false
     };
   },
   computed: {
@@ -645,31 +519,6 @@ export default {
     currentLangLabel() {
       const found = LANGUAGES.find(l => l.key === this.activeLang);
       return found ? found.label.he : this.activeLang;
-    },
-    activeIsBuiltIn() {
-      return isBuiltInCategory(this.activeCategory);
-    },
-    activeHasDefault() {
-      return hasDefaultTemplate(this.activeCategory);
-    },
-    bannerClass() {
-      if (this.isCustom) return "banner-custom";
-      if (!this.activeHasDefault) return "banner-empty";
-      return "banner-default";
-    },
-    bannerIcon() {
-      if (this.isCustom) return "✏️";
-      if (!this.activeHasDefault) return "📋";
-      return "📄";
-    },
-    bannerText() {
-      if (this.isCustom) return "תבנית מותאמת אישית (שמורה)";
-      if (!this.activeHasDefault) return "תבנית חדשה — הדבק או הקלד את הפורמט שלך";
-      return "תבנית ברירת מחדל";
-    },
-    deleteTargetLabel() {
-      const cat = this.categories.find(c => c.key === this.deleteDialog.targetKey);
-      return cat ? cat.label.he : "";
     },
     unsaved() {
       return this.draftValue !== this.savedValue;
@@ -834,7 +683,6 @@ export default {
         try {
           const data = JSON.parse(String(reader.result || ""));
           const count = importAllTemplates(data);
-          this.refreshCategories();
           this.loadCurrent();
           this.$q.notify({
             type: "positive",
@@ -852,104 +700,6 @@ export default {
         }
       };
       reader.readAsText(file);
-    },
-    refreshCategories() {
-      this.categories = getAllCategories();
-    },
-    openAddCategory() {
-      this.categoryDialog = {
-        open: true,
-        mode: "add",
-        editingKey: null,
-        labelHe: "",
-        labelEn: "",
-        labelFr: "",
-        error: ""
-      };
-    },
-    openEditCategory() {
-      const cat = this.categories.find(c => c.key === this.activeCategory);
-      if (!cat) return;
-      this.categoryDialog = {
-        open: true,
-        mode: "edit",
-        editingKey: cat.key,
-        labelHe: cat.label.he || "",
-        labelEn: cat.label.en === cat.label.he ? "" : (cat.label.en || ""),
-        labelFr: cat.label.fr === cat.label.he ? "" : (cat.label.fr || ""),
-        error: ""
-      };
-    },
-    closeCategoryDialog() {
-      this.categoryDialog.open = false;
-    },
-    submitCategoryDialog() {
-      const he = (this.categoryDialog.labelHe || "").trim();
-      if (!he) {
-        this.categoryDialog.error = "יש להזין שם בעברית";
-        return;
-      }
-      const label = {
-        he,
-        en: (this.categoryDialog.labelEn || "").trim(),
-        fr: (this.categoryDialog.labelFr || "").trim()
-      };
-      try {
-        if (this.categoryDialog.mode === "add") {
-          const rec = addCategory(label);
-          this.refreshCategories();
-          this.activeCategory = rec.key;
-          this.$q.notify({
-            type: "positive",
-            message: "הקטגוריה נוספה",
-            position: "top",
-            timeout: 1500
-          });
-        } else {
-          renameCategory(this.categoryDialog.editingKey, label);
-          this.refreshCategories();
-          this.$q.notify({
-            type: "positive",
-            message: "השם עודכן",
-            position: "top",
-            timeout: 1500
-          });
-        }
-        this.closeCategoryDialog();
-      } catch (e) {
-        this.categoryDialog.error = "שמירה נכשלה — נסה שנית";
-      }
-    },
-    openDeleteCategory() {
-      if (this.activeIsBuiltIn) return;
-      this.deleteDialog = { open: true, targetKey: this.activeCategory };
-    },
-    confirmDeleteCategory() {
-      const key = this.deleteDialog.targetKey;
-      if (!key || isBuiltInCategory(key)) {
-        this.deleteDialog.open = false;
-        return;
-      }
-      try {
-        deleteCategory(key);
-        this.deleteDialog.open = false;
-        this.activeCategory = "flight";
-        this.refreshCategories();
-        this.loadCurrent();
-        this.$q.notify({
-          type: "info",
-          message: "הקטגוריה נמחקה",
-          position: "top",
-          timeout: 1800
-        });
-      } catch (e) {
-        this.$q.notify({
-          type: "negative",
-          message: "מחיקה נכשלה",
-          position: "top",
-          timeout: 1800
-        });
-      }
     },
     expandFlightBlockPreview(tpl, flights) {
       const hasPerFlightKey = FLIGHT_ITEM_KEYS.some(k =>
@@ -1532,100 +1282,5 @@ body.body--dark .danger-word {
 .danger-input {
   flex: 1;
   min-width: 200px;
-}
-
-/* Add-category pill */
-.pill-add {
-  border: 1px dashed #94a3b8 !important;
-  color: #1d4ed8 !important;
-  background: transparent;
-}
-
-body.body--dark .pill-add {
-  border-color: #4b5563 !important;
-  color: #8ab4f8 !important;
-}
-
-.pill-add:hover {
-  background: #eff6ff !important;
-  border-color: #2563eb !important;
-}
-
-body.body--dark .pill-add:hover {
-  background: #1e293b !important;
-}
-
-/* Custom category edit/delete strip */
-.custom-cat-actions {
-  display: flex;
-  gap: 6px;
-  margin: 0 0 10px;
-  flex-wrap: wrap;
-}
-
-/* Banner for empty (newly created custom) categories */
-.banner-empty {
-  background: #e0f2fe;
-  color: #075985;
-}
-
-body.body--dark .banner-empty {
-  background: #0c2a3a;
-  color: #7dd3fc;
-}
-
-/* Category add/edit/delete dialogs */
-.cat-dialog-card {
-  min-width: 320px;
-  max-width: 440px;
-  border-radius: 14px;
-  font-family: $font-stack;
-}
-
-body.body--dark .cat-dialog-card {
-  background: #1e1e1e;
-  color: #e0e0e0;
-}
-
-.cat-dialog-header {
-  font-size: 17px;
-  font-weight: 700;
-  color: #0b1730;
-  padding: 18px 20px 8px;
-}
-
-body.body--dark .cat-dialog-header { color: #8ab4f8; }
-
-.cat-dialog-header.danger-header-text { color: #991b1b; }
-body.body--dark .cat-dialog-header.danger-header-text { color: #fca5a5; }
-
-.cat-dialog-body {
-  padding: 8px 20px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.cat-dialog-input { width: 100%; }
-
-.cat-dialog-hint {
-  font-size: 12.5px;
-  color: #64748b;
-  line-height: 1.5;
-}
-
-body.body--dark .cat-dialog-hint { color: #94a3b8; }
-
-.cat-delete-text {
-  font-size: 14px;
-  color: #475569;
-  line-height: 1.7;
-}
-
-body.body--dark .cat-delete-text { color: #cbd5e1; }
-
-.cat-dialog-actions {
-  padding: 8px 16px 16px;
-  gap: 6px;
 }
 </style>

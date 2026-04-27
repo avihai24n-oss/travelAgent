@@ -249,100 +249,6 @@ const storageKey = (category, lang) => `customTemplate:${category}:${lang}`;
 const historyKey = (category, lang) => `customTemplateHistory:${category}:${lang}`;
 const HISTORY_LIMIT = 20;
 
-// Registry of admin-defined offer categories (e.g. hotels, cruises, custom bundles).
-// Built-ins (CATEGORIES) are immutable; this storage holds only user-added ones.
-// Each record reserves a `schema` field for the future DOS auto-mapping infrastructure;
-// today it stays null, and MessageBuilder ignores custom categories entirely.
-const CATEGORIES_KEY = "customCategories";
-const CATEGORY_VERSION = 1;
-
-function readCustomCategories() {
-  try {
-    const raw = window.localStorage.getItem(CATEGORIES_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-function writeCustomCategories(arr) {
-  try {
-    window.localStorage.setItem(CATEGORIES_KEY, JSON.stringify(arr));
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-export function isBuiltInCategory(key) {
-  return CATEGORIES.some(c => c.key === key);
-}
-
-export function getCustomCategories() {
-  return readCustomCategories();
-}
-
-export function getAllCategories() {
-  return [
-    ...CATEGORIES.map(c => ({ ...c, builtIn: true })),
-    ...readCustomCategories().map(c => ({ ...c, builtIn: false }))
-  ];
-}
-
-function normalizeLabel(label) {
-  const he = (label && typeof label.he === "string" && label.he.trim()) || "";
-  if (!he) return null;
-  const en = (label && typeof label.en === "string" && label.en.trim()) || he;
-  const fr = (label && typeof label.fr === "string" && label.fr.trim()) || he;
-  return { he, en, fr };
-}
-
-export function addCategory(label) {
-  const normalized = normalizeLabel(label);
-  if (!normalized) throw new Error("missing_he_label");
-  const key = `custom_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  const record = {
-    key,
-    label: normalized,
-    schema: null,
-    version: CATEGORY_VERSION
-  };
-  const list = readCustomCategories();
-  list.push(record);
-  writeCustomCategories(list);
-  return record;
-}
-
-export function renameCategory(key, label) {
-  if (isBuiltInCategory(key)) throw new Error("builtin_immutable");
-  const normalized = normalizeLabel(label);
-  if (!normalized) throw new Error("missing_he_label");
-  const list = readCustomCategories();
-  const idx = list.findIndex(c => c.key === key);
-  if (idx === -1) throw new Error("not_found");
-  list[idx] = { ...list[idx], label: normalized };
-  writeCustomCategories(list);
-  return list[idx];
-}
-
-export function deleteCategory(key) {
-  if (isBuiltInCategory(key)) throw new Error("builtin_immutable");
-  const list = readCustomCategories();
-  const next = list.filter(c => c.key !== key);
-  writeCustomCategories(next);
-  try {
-    for (const lang of LANGUAGES.map(l => l.key)) {
-      window.localStorage.removeItem(storageKey(key, lang));
-      window.localStorage.removeItem(historyKey(key, lang));
-    }
-  } catch (e) {
-    // ignore
-  }
-  return true;
-}
-
 export function loadTemplate(category, lang) {
   try {
     const saved = window.localStorage.getItem(storageKey(category, lang));
@@ -350,12 +256,7 @@ export function loadTemplate(category, lang) {
   } catch (e) {
     // localStorage unavailable — fall back to default
   }
-  // Custom categories have no built-in defaults — return empty so the editor opens blank.
   return (DEFAULT_TEMPLATES[category] && DEFAULT_TEMPLATES[category][lang]) || "";
-}
-
-export function hasDefaultTemplate(category) {
-  return Object.prototype.hasOwnProperty.call(DEFAULT_TEMPLATES, category);
 }
 
 export function saveTemplate(category, lang, value) {
@@ -412,19 +313,10 @@ export function loadHistory(category, lang) {
 }
 
 export function exportAllTemplates() {
-  const payload = {
-    version: 2,
-    exportedAt: new Date().toISOString(),
-    templates: {},
-    customCategories: readCustomCategories()
-  };
+  const payload = { version: 1, exportedAt: new Date().toISOString(), templates: {} };
   try {
-    const langKeys = LANGUAGES.map(l => l.key);
-    const builtInCats = Object.keys(DEFAULT_TEMPLATES);
-    const customCatKeys = payload.customCategories.map(c => c.key);
-    const allCats = [...builtInCats, ...customCatKeys];
-    for (const cat of allCats) {
-      for (const lang of langKeys) {
+    for (const cat of Object.keys(DEFAULT_TEMPLATES)) {
+      for (const lang of Object.keys(DEFAULT_TEMPLATES[cat])) {
         const saved = window.localStorage.getItem(storageKey(cat, lang));
         if (saved !== null) {
           payload.templates[`${cat}:${lang}`] = saved;
@@ -440,25 +332,6 @@ export function exportAllTemplates() {
 export function importAllTemplates(payload) {
   if (!payload || typeof payload !== "object" || !payload.templates) {
     throw new Error("invalid_backup");
-  }
-  // Restore custom categories first so their template entries land on a known target.
-  if (Array.isArray(payload.customCategories)) {
-    const sanitized = payload.customCategories
-      .filter(c => c && typeof c.key === "string" && !isBuiltInCategory(c.key))
-      .map(c => ({
-        key: c.key,
-        label: normalizeLabel(c.label) || { he: c.key, en: c.key, fr: c.key },
-        schema: c.schema || null,
-        version: c.version || CATEGORY_VERSION
-      }));
-    const existing = readCustomCategories();
-    const merged = [...existing];
-    for (const rec of sanitized) {
-      const idx = merged.findIndex(m => m.key === rec.key);
-      if (idx === -1) merged.push(rec);
-      else merged[idx] = rec;
-    }
-    writeCustomCategories(merged);
   }
   const entries = Object.entries(payload.templates);
   let count = 0;
