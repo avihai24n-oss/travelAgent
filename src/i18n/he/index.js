@@ -5,7 +5,7 @@ export default {
   "english": "English",
   "francais": "Francais",
   "hebrew": "עברית",
-  "outbound flight": "טיסות הלוך 🛫",
+  "outbound flight": "טיסה/ות הלוך🛫",
   "other destination flight": "יעד נוסף ✈️",
   "inbound flight": "טיסה/ות חזור 🛬",
   "together with": "together with",
