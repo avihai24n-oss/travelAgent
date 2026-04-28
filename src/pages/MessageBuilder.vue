@@ -376,16 +376,29 @@
             :contact-name="previewContactName"
             @update:text="whatsappMessage = $event"
           />
-          <q-btn
-            @click="onRedirectToWhatsapp"
-            class="send-btn"
-            unelevated
-            no-caps
-            color="positive"
-            icon="send"
-            label="Send to WhatsApp"
-            size="md"
-          />
+          <div class="preview-actions">
+            <q-btn
+              @click="onCopyMessage"
+              class="copy-msg-btn"
+              unelevated
+              no-caps
+              color="primary"
+              icon="content_copy"
+              :label="copyBtnLabel"
+              :disable="!whatsappMessage"
+              size="md"
+            />
+            <q-btn
+              @click="onRedirectToWhatsapp"
+              class="send-btn"
+              unelevated
+              no-caps
+              color="positive"
+              icon="send"
+              label="Send to WhatsApp"
+              size="md"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -531,6 +544,26 @@ export default {
       this.data.travelers = this.data.travelers.filter(
         (traveler, index) => index !== idx
       );
+    },
+    async onCopyMessage() {
+      const text = this.whatsappMessage || "";
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        const msg = this.selectedLang === "he"
+          ? "הועתק ללוח"
+          : this.selectedLang === "fr"
+            ? "Copié"
+            : "Copied";
+        this.$q.notify({ type: "positive", message: msg, position: "top", timeout: 1500 });
+      } catch (e) {
+        const fail = this.selectedLang === "he"
+          ? "שגיאה בהעתקה"
+          : this.selectedLang === "fr"
+            ? "Erreur de copie"
+            : "Copy failed";
+        this.$q.notify({ type: "negative", message: fail, position: "top", timeout: 2000 });
+      }
     },
     onPreview() {
       let flightsTxt;
@@ -829,6 +862,16 @@ export default {
           return "Traduire les noms du PNR";
         default:
           return "Fill names from PNR";
+      }
+    },
+    copyBtnLabel() {
+      switch (this.selectedLang) {
+        case "he":
+          return "העתק להודעה";
+        case "fr":
+          return "Copier le message";
+        default:
+          return "Copy message";
       }
     },
     noNamesFoundMsg() {
@@ -1701,6 +1744,20 @@ body.body--dark .preview-textarea ::v-deep .q-field__native {
 }
 
 .send-btn {
+  width: 100%;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 600;
+}
+
+.preview-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.copy-msg-btn {
   width: 100%;
   border-radius: 10px;
   padding: 12px;
