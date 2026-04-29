@@ -545,11 +545,25 @@ export default {
         (traveler, index) => index !== idx
       );
     },
+    prepareTextForClipboard(text) {
+      // Preserve preview spacing in WhatsApp:
+      // - Blank lines get a zero-width-space so WhatsApp can't collapse them.
+      // - Runs of 2+ regular spaces become non-breaking spaces so WhatsApp
+      //   doesn't crunch them down to a single space.
+      return text
+        .split("\n")
+        .map(line => {
+          if (line.trim() === "") return "​";
+          return line.replace(/ {2,}/g, m => " ".repeat(m.length));
+        })
+        .join("\n");
+    },
     async onCopyMessage() {
       const text = this.whatsappMessage || "";
       if (!text) return;
+      const prepared = this.prepareTextForClipboard(text);
       try {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(prepared);
         const msg = this.selectedLang === "he"
           ? "הועתק ללוח"
           : this.selectedLang === "fr"
