@@ -465,7 +465,7 @@ const PREVIEW_SAMPLES = {
     GREETING: "שלום!",
     DESTINATION: "מדריד",
     FLIGHTS:
-      "*מסלול הטיסות 🌍*\n*טיסה/ות הלוך🛫*\nטיסת El Al - *LY543*\nתל אביב ⬅️ אתונה (ATH)\nמחלקת תיירים/עסקים/פרמיום\nממריא יום ג' 19 מאי 19:30\nנוחת    יום ג' 19 מאי 21:40\n💺 (מושב - *XX*)\n\n*טיסה/ות חזור 🛬*\nטיסת El Al - *LY542*\nאתונה (ATH) ⬅️ תל אביב\nמחלקת תיירים/עסקים/פרמיום\nממריא יום ב' 25 מאי 10:35\nנוחת    יום ב' 25 מאי 12:35\n💺(מושב - *XX*)",
+      "*מסלול הטיסות 🌍*\n\n*טיסה/ות הלוך🛫*\nטיסת El Al - *LY543*\nתל אביב ⬅️ אתונה (ATH)\n*מחלקת תיירים/עסקים/פרמיום*\nממריא יום ג' 19 מאי 19:30\nנוחת    יום ג' 19 מאי 21:40\n💺 מושב *XX*\n\n*טיסה/ות חזור 🛬*\nטיסת El Al - *LY542*\nאתונה (ATH) ⬅️ תל אביב\n*מחלקת תיירים/עסקים/פרמיום*\nממריא יום ב' 25 מאי 10:35\nנוחת    יום ב' 25 מאי 12:35\n💺 מושב *XX*",
     AIRLINE_NAME: "EL AL",
     AIRLINE_CODE: "LY",
     CLASS: "מחלקת תיירים",
@@ -484,7 +484,7 @@ const PREVIEW_SAMPLES = {
     GREETING: "Shalom!",
     DESTINATION: "Madrid",
     FLIGHTS:
-      "*Itinerary 🌍*\n*Outbound flight🛫*\nEl Al - *LY543*\nTel-aviv ➡️ Athens (ATH)\nEconomy/Premium/Business Class\nDpt. Tue. 19 MAY 19:30\nArr.  Tue. 19 MAY 21:40\n💺 (Seat *XX*)\n\n*Inbound flight 🛬*\nEl Al - *LY542*\nAthens (ATH) ➡️ Tel-aviv\nEconomy/Premium/Business Class\nDpt. Mon. 25 MAY 10:35\nArr.  Mon. 25 MAY 12:35\n💺 (Seat *XX*)",
+      "*Itinerary 🌍*\n\n*Outbound flight🛫*\nEl Al - *LY543*\nTel-aviv ➡️ Athens (ATH)\n*Economy/Premium/Business Class*\nDpt. Tue. 19 MAY 19:30\nArr.  Tue. 19 MAY 21:40\n💺 Seat *XX*\n\n*Inbound flight 🛬*\nEl Al - *LY542*\nAthens (ATH) ➡️ Tel-aviv\n*Economy/Premium/Business Class*\nDpt. Mon. 25 MAY 10:35\nArr.  Mon. 25 MAY 12:35\n💺 Seat *XX*",
     AIRLINE_NAME: "EL AL",
     AIRLINE_CODE: "LY",
     CLASS: "Economy",
@@ -503,7 +503,7 @@ const PREVIEW_SAMPLES = {
     GREETING: "Shalom!",
     DESTINATION: "Madrid",
     FLIGHTS:
-      "*Itinéraire 🌍*\n*Vol aller 🛫*\nEl Al - *LY543*\nTel-aviv ➡️ Athens (ATH)\nEconomy/Premium/Business Class\nDpt. Mar 19 MAI 19:30\nArr.  Mar 19 MAI 21:40\n💺 (Siege *XX*)\n\n*Vol retour 🛬*\nEl Al - *LY542*\nAthens (ATH) ➡️ Tel-aviv (TLV)\nEconomy/Premium/Business Class\nDpt. Lun 25 MAI 10:35\nArr.  Lun 25 MAI 12:35\n💺 (Siege *XX*)",
+      "*Itinéraire 🌍*\n\n*Vol aller 🛫*\nEl Al - *LY543*\nTel-aviv ➡️ Athens (ATH)\n*Economy/Premium/Business Class*\nDpt. Mar 19 MAI 19:30\nArr.  Mar 19 MAI 21:40\n💺 Siege *XX*\n\n*Vol retour 🛬*\nEl Al - *LY542*\nAthens (ATH) ➡️ Tel-aviv (TLV)\n*Economy/Premium/Business Class*\nDpt. Lun 25 MAI 10:35\nArr.  Lun 25 MAI 12:35\n💺 Siege *XX*",
     AIRLINE_NAME: "EL AL",
     AIRLINE_CODE: "LY",
     CLASS: "Économie",
@@ -523,6 +523,7 @@ const PREVIEW_FLIGHTS = {
   he: [
     {
       FLIGHT_DIRECTION: "טיסה/ות הלוך🛫",
+      directionGroup: "outbound",
       FLIGHT_AIRLINE: "El Al",
       FLIGHT_NUMBER: "LY543",
       FLIGHT_ORIGIN_CITY: "תל אביב",
@@ -541,6 +542,7 @@ const PREVIEW_FLIGHTS = {
     },
     {
       FLIGHT_DIRECTION: "טיסה/ות חזור 🛬",
+      directionGroup: "inbound",
       FLIGHT_AIRLINE: "El Al",
       FLIGHT_NUMBER: "LY542",
       FLIGHT_ORIGIN_CITY: "אתונה",
@@ -561,6 +563,7 @@ const PREVIEW_FLIGHTS = {
   en: [
     {
       FLIGHT_DIRECTION: "Outbound flight🛫",
+      directionGroup: "outbound",
       FLIGHT_AIRLINE: "El Al",
       FLIGHT_NUMBER: "LY543",
       FLIGHT_ORIGIN_CITY: "Tel-aviv",
@@ -579,6 +582,7 @@ const PREVIEW_FLIGHTS = {
     },
     {
       FLIGHT_DIRECTION: "Inbound flight 🛬",
+      directionGroup: "inbound",
       FLIGHT_AIRLINE: "El Al",
       FLIGHT_NUMBER: "LY542",
       FLIGHT_ORIGIN_CITY: "Athens",
@@ -599,6 +603,7 @@ const PREVIEW_FLIGHTS = {
   fr: [
     {
       FLIGHT_DIRECTION: "Vol aller 🛫",
+      directionGroup: "outbound",
       FLIGHT_AIRLINE: "El Al",
       FLIGHT_NUMBER: "LY543",
       FLIGHT_ORIGIN_CITY: "Tel-aviv",
@@ -617,6 +622,7 @@ const PREVIEW_FLIGHTS = {
     },
     {
       FLIGHT_DIRECTION: "Vol retour 🛬",
+      directionGroup: "inbound",
       FLIGHT_AIRLINE: "El Al",
       FLIGHT_NUMBER: "LY542",
       FLIGHT_ORIGIN_CITY: "Athens",
@@ -990,9 +996,11 @@ export default {
       });
       if (!blockIdx.length) return tpl;
 
+      // Distribute by direction (matches MessageBuilder's expandFlightBlock).
       const perBlock = blockIdx.map(() => []);
-      flights.forEach((f, fi) => {
-        const bi = Math.min(fi, blockIdx.length - 1);
+      const hasTwoBlocks = blockIdx.length >= 2;
+      flights.forEach(f => {
+        const bi = hasTwoBlocks && f.directionGroup === "inbound" ? 1 : 0;
         perBlock[bi].push(f);
       });
 
@@ -1011,7 +1019,7 @@ export default {
                   f[key] !== undefined ? f[key] : m
                 )
               )
-              .join("\n")
+              .join("\n\n")
           );
         }
       }

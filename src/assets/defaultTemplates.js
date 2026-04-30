@@ -72,21 +72,22 @@ export const DEFAULT_TEMPLATES = {
 {{ALL_NAMES}}
 
 *מסלול הטיסות 🌍*
-*טיסה/ות הלוך🛫*
+
+*{{FLIGHT_DIRECTION}}*
 טיסת {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ⬅️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
-מחלקת תיירים/עסקים/פרמיום
+*מחלקת תיירים/עסקים/פרמיום*
 ממריא {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 נוחת    {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 (מושב - *XX*)
+💺 מושב *XX*
 
-*טיסה/ות חזור 🛬*
+*{{FLIGHT_DIRECTION}}*
 טיסת {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ({{FLIGHT_ORIGIN_CODE}}) ⬅️ {{FLIGHT_DEST_CITY}}
-מחלקת תיירים/עסקים/פרמיום
+*מחלקת תיירים/עסקים/פרמיום*
 ממריא {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 נוחת    {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺(מושב - *XX*)
+💺 מושב *XX*
 
 *חברת התעופה:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
@@ -130,21 +131,22 @@ In reply to your request, you'll find below my *Updated proposal* for your *(�
 Please, kindly *reply (from within this WhatsApp message)* with your *tickets issuance approval* accordingly with the content of this proposal.
 
 *Itinerary 🌍*
-*Outbound flight🛫*
+
+*{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ➡️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
-Economy/Premium/Business Class
+*Economy/Premium/Business Class*
 Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 (Seat *XX*)
+💺 Seat *XX*
 
-*Inbound flight 🛬*
+*{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ({{FLIGHT_ORIGIN_CODE}}) ➡️ {{FLIGHT_DEST_CITY}}
-Economy/Premium/Business Class
+*Economy/Premium/Business Class*
 Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 (Seat *XX*)
+💺 Seat *XX*
 
 *Airline:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
@@ -191,21 +193,22 @@ Pour faire suite à ta demande, tu trouveras ci-dessous ma *proposition actualis
 Merci de *répondre (depuis ce message WhatsApp)* avec ta *validation d'émission de ton billet* conformément au contenu de cette proposition.
 
 *Itinéraire 🌍*
-*Vol aller 🛫*
+
+*{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ➡️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
-Economy/Premium/Business Class
+*Economy/Premium/Business Class*
 Dpt. {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 (Siege *XX*)
+💺 Siege *XX*
 
-*Vol retour 🛬*
+*{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ({{FLIGHT_ORIGIN_CODE}}) ➡️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
-Economy/Premium/Business Class
+*Economy/Premium/Business Class*
 Dpt. {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 (Siege *XX*)
+💺 Siege *XX*
 
 *Compagnie:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*

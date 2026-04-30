@@ -96,15 +96,15 @@
           />
           <div class="q-mt-md row items-center q-gutter-sm translate-row">
             <q-btn
-              :label="translateBtnLabel"
-              icon="translate"
+              :label="selectDestinationBtnLabel"
+              icon="flight_takeoff"
               color="primary"
               unelevated
               size="lg"
               class="translate-btn"
               :loading="isTranslatingNames"
               :disable="!data.smartAmadeusCode || apiStatus === 'offline'"
-              @click="onTranslateNamesFromPNR"
+              @click="openDestinationPicker"
               no-caps
             />
             <q-chip
@@ -402,6 +402,64 @@
         </div>
       </div>
     </div>
+
+    <!-- DESTINATION PICKER DIALOG -->
+    <q-dialog v-model="destinationPickerOpen" persistent>
+      <q-card class="dest-dialog" :dir="selectedLang === 'he' ? 'rtl' : 'ltr'">
+        <q-card-section>
+          <div class="dest-dialog-title">{{ $t('destination picker title') }}</div>
+          <div class="dest-dialog-desc">{{ $t('destination picker desc') }}</div>
+          <div v-if="extractedDestinations.length === 0" class="dest-dialog-empty">
+            {{ selectedLang === 'he'
+              ? 'לא זיהיתי יעדים בקוד.'
+              : selectedLang === 'fr'
+                ? 'Aucune destination détectée.'
+                : 'No destinations detected.' }}
+          </div>
+          <q-list v-else class="dest-list" separator>
+            <q-item
+              v-for="dest in extractedDestinations"
+              :key="dest.code"
+              clickable
+              v-ripple
+              tag="label"
+              class="dest-item"
+              :class="{ 'dest-item-selected': pendingDestinationCode === dest.code }"
+            >
+              <q-item-section avatar>
+                <q-radio v-model="pendingDestinationCode" :val="dest.code" color="primary" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="dest-item-label">
+                  <span class="dest-flag">{{ dest.flag || '🏳️' }}</span>
+                  <span class="dest-city">{{ dest.cityName }}</span>
+                  <span class="dest-code">({{ dest.code }})</span>
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn
+            flat
+            no-caps
+            color="grey-7"
+            :label="$t('destination picker cancel')"
+            @click="destinationPickerOpen = false"
+          />
+          <q-btn
+            color="primary"
+            unelevated
+            no-caps
+            icon="check"
+            :label="$t('destination picker confirm')"
+            :disable="!pendingDestinationCode || isTranslatingNames"
+            :loading="isTranslatingNames"
+            @click="confirmDestinationAndContinue"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -423,6 +481,7 @@ import messageMixin from "./messageMixin";
 import { LocalStorage } from "quasar";
 import { airports } from "src/assets/iata";
 import { loadTemplate, FLIGHT_ITEM_KEYS } from "src/assets/defaultTemplates.js";
+import { flagFromCountry } from "src/assets/countryFlag.js";
 import {
   parseAmadeusNames,
   translateNamesViaProxy,
@@ -442,6 +501,9 @@ export default {
       isTranslatingNames: false,
       lastTranslationInfo: "",
       lastTranslatedNames: [],
+      destinationPickerOpen: false,
+      pendingDestinationCode: null,
+      selectedFinalDestination: null,
       apiStatus: "unknown", // "unknown" | "ok" | "offline" | "misconfigured"
       TRAVELER_TYPES: TRAVELER_TYPES,
       CLASSES_TYPE_MAP: CLASSES_TYPE_MAP,
@@ -497,6 +559,59 @@ export default {
         return;
       }
       this.apiStatus = result.openaiConfigured ? "ok" : "misconfigured";
+    },
+    openDestinationPicker() {
+      const prev = this.selectedFinalDestination ? this.selectedFinalDestination.code : null;
+      const dests = this.extractedDestinations;
+      const stillValid = prev && dests.some(d => d.code === prev);
+      this.pendingDestinationCode = stillValid ? prev : null;
+      this.destinationPickerOpen = true;
+    },
+    async confirmDestinationAndContinue() {
+      if (!this.pendingDestinationCode) return;
+      const picked = this.extractedDestinations.find(d => d.code === this.pendingDestinationCode);
+      if (!picked) return;
+      this.selectedFinalDestination = picked;
+
+      const raw = this.data.smartAmadeusCode || "";
+      const parsedNames = parseAmadeusNames(raw);
+
+      if (parsedNames.length === 0) {
+        this.lastTranslatedNames = [];
+        this.lastTranslationInfo = "";
+        this.destinationPickerOpen = false;
+        this.tab = "preview";
+        this.onPreview();
+        return;
+      }
+
+      this.isTranslatingNames = true;
+      this.lastTranslationInfo = "";
+      this.lastTranslatedNames = [];
+      try {
+        const translated = await translateNamesViaProxy(parsedNames, this.selectedLang);
+        const newTravelers = buildTravelersFromNames(parsedNames, translated);
+        this.data.travelers = newTravelers;
+        this.lastTranslatedNames = newTravelers.map(t => t.name);
+        this.destinationPickerOpen = false;
+        this.tab = "preview";
+        this.onPreview();
+        this.$q.notify({
+          type: "positive",
+          message: this.translatedCountMsg(newTravelers.length),
+          timeout: 2500
+        });
+      } catch (err) {
+        const msg =
+          err && err.message === "missing_proxy_config"
+            ? this.missingApiKeyMsg
+            : this.translationFailedMsg;
+        this.lastTranslationInfo = msg;
+        this.$q.notify({ type: "negative", message: msg, timeout: 4000 });
+        console.error("translate names error:", err);
+      } finally {
+        this.isTranslatingNames = false;
+      }
     },
     async onTranslateNamesFromPNR() {
       const raw = this.data.smartAmadeusCode || "";
@@ -731,9 +846,14 @@ export default {
       });
       if (!blockIdx.length) return tpl;
 
+      // Distribute flights to blocks BY DIRECTION (not by index):
+      // - First block = all outbound flights
+      // - Second block = all inbound flights
+      // - If template has only 1 block, everything goes there
       const perBlock = blockIdx.map(() => []);
-      flights.forEach((f, fi) => {
-        const bi = Math.min(fi, blockIdx.length - 1);
+      const hasTwoBlocks = blockIdx.length >= 2;
+      flights.forEach(f => {
+        const bi = hasTwoBlocks && f.directionGroup === "inbound" ? 1 : 0;
         perBlock[bi].push(f);
       });
 
@@ -748,7 +868,7 @@ export default {
           out.push(
             perBlock[bi]
               .map(f => this.renderFlightBlock(s.lines.join("\n"), f))
-              .join("\n")
+              .join("\n\n")
           );
         }
       }
@@ -877,6 +997,46 @@ export default {
         default:
           return "Fill names from PNR";
       }
+    },
+    selectDestinationBtnLabel() {
+      return this.$t("select destination");
+    },
+    extractedDestinations() {
+      // Returns unique non-origin airports found in the parsed PNR, ready
+      // for the destination-picker dialog. The first flight's origin is treated
+      // as "home" and excluded.
+      const raw = this.data.smartAmadeusCode || "";
+      if (!raw) return [];
+      const lines = raw.split("\n").filter(l => this.isFlightLine(l));
+      if (!lines.length) return [];
+      const codes = [];
+      const seen = new Set();
+      let originCode = null;
+      for (const rawLine of lines) {
+        const splitted = this.getSplittedLine(rawLine);
+        if (!splitted) continue;
+        const f = this.parseFlightLinePure(splitted);
+        if (!f) continue;
+        if (originCode === null) originCode = f.departAirportCode;
+        if (f.destAirportCode && f.destAirportCode !== originCode && !seen.has(f.destAirportCode)) {
+          seen.add(f.destAirportCode);
+          codes.push(f.destAirportCode);
+        }
+      }
+      const isHe = this.selectedLang === "he";
+      return codes.map(code => {
+        const meta = airports[code] || {};
+        const cityName = isHe
+          ? meta.CityNameHe || meta.CityNameEn || code
+          : meta.CityNameEn || code;
+        const country = meta.CountryNameEn || "";
+        return {
+          code,
+          cityName,
+          country,
+          flag: flagFromCountry(country)
+        };
+      });
     },
     copyBtnLabel() {
       switch (this.selectedLang) {
@@ -1777,6 +1937,81 @@ body.body--dark .preview-textarea ::v-deep .q-field__native {
   padding: 12px;
   font-weight: 600;
 }
+
+/* Destination picker dialog */
+.dest-dialog {
+  min-width: 320px;
+  max-width: 420px;
+  width: 100%;
+  border-radius: 14px;
+}
+
+.dest-dialog-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0b1730;
+  margin-bottom: 6px;
+}
+
+body.body--dark .dest-dialog-title { color: #8ab4f8; }
+
+.dest-dialog-desc {
+  font-size: 13.5px;
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+body.body--dark .dest-dialog-desc { color: #aab; }
+
+.dest-dialog-empty {
+  padding: 20px 8px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.dest-list {
+  margin-top: 8px;
+  border: 1px solid #e4e9f1;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+body.body--dark .dest-list { border-color: #2e3842; }
+
+.dest-item {
+  padding: 10px 12px;
+  transition: background 0.15s ease;
+}
+
+.dest-item-selected {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+body.body--dark .dest-item-selected {
+  background: rgba(96, 165, 250, 0.15);
+}
+
+.dest-item-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.dest-flag { font-size: 22px; line-height: 1; }
+.dest-city { color: #0b1730; }
+.dest-code {
+  color: #64748b;
+  font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+body.body--dark .dest-city { color: #e9edef; }
+body.body--dark .dest-code { color: #94a3b8; }
 
 /* Dark mode heading fix */
 body.body--dark {

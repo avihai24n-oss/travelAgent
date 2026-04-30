@@ -185,24 +185,65 @@ const messageMixin = {
         if (f) flights.push(f);
       }
       if (!flights.length) return [];
-      const outbound = this.$t("outbound flight");
-      const inbound = this.$t("inbound flight");
-      const other = this.$t("other destination flight");
-      let way = outbound;
-      for (let i = 0; i < flights.length; i++) {
-        flights[i].direction = way;
-        const next = flights[i + 1];
-        if (next) {
-          const gap = this.getHourDifference(flights[i], next);
-          if (24 < gap) {
-            for (let j = 0; j <= i; j++) {
-              if (flights[j].direction === inbound) {
-                flights[j].direction = other;
-                break;
-              }
-            }
-            way = inbound;
+
+      const outboundLbl = this.$t("outbound flight");
+      const inboundLbl = this.$t("inbound flight");
+      const connectionLbl = this.$t("connection flight");
+      const continuingLbl = this.$t("continuing flight");
+      const LAYOVER_THRESHOLD_HOURS = 10;
+
+      // Find the index of the flight that LANDS at the user-picked final destination.
+      // Everything up to and including that flight is outbound; everything after is return.
+      // If the user hasn't picked yet (or the picked code isn't found), fall back to
+      // the previous behaviour: a >24h gap flips outbound→inbound.
+      const finalDestCode = this.selectedFinalDestination
+        ? this.selectedFinalDestination.code
+        : null;
+      let turnaroundIdx = -1;
+      if (finalDestCode) {
+        for (let i = 0; i < flights.length; i++) {
+          if (flights[i].destAirportCode === finalDestCode) {
+            turnaroundIdx = i;
+            break;
           }
+        }
+      }
+
+      const labelFor = (isFirstInGroup, gapFromPrev, baseLabel) => {
+        if (isFirstInGroup) return baseLabel;
+        return gapFromPrev < LAYOVER_THRESHOLD_HOURS ? connectionLbl : continuingLbl;
+      };
+
+      if (turnaroundIdx !== -1) {
+        // Destination-driven labelling (preferred path).
+        for (let i = 0; i < flights.length; i++) {
+          const isOutbound = i <= turnaroundIdx;
+          const isFirstInGroup = isOutbound ? i === 0 : i === turnaroundIdx + 1;
+          const base = isOutbound ? outboundLbl : inboundLbl;
+          const gap = i > 0 ? this.getHourDifference(flights[i - 1], flights[i]) : Infinity;
+          flights[i].direction = labelFor(isFirstInGroup, gap, base);
+          flights[i].directionGroup = isOutbound ? "outbound" : "inbound";
+        }
+      } else {
+        // Fallback: 24h-gap heuristic, with the same connection/continuing rule
+        // applied within each leg.
+        let group = "outbound";
+        let firstInGroup = true;
+        for (let i = 0; i < flights.length; i++) {
+          const base = group === "outbound" ? outboundLbl : inboundLbl;
+          const gap = i > 0 ? this.getHourDifference(flights[i - 1], flights[i]) : Infinity;
+          flights[i].direction = labelFor(firstInGroup, gap, base);
+          flights[i].directionGroup = group;
+          const next = flights[i + 1];
+          if (next) {
+            const nextGap = this.getHourDifference(flights[i], next);
+            if (group === "outbound" && nextGap > 24) {
+              group = "inbound";
+              firstInGroup = true;
+              continue;
+            }
+          }
+          firstInGroup = false;
         }
       }
       return flights;
