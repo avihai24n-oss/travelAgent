@@ -5229,7 +5229,7 @@ export const airports = {
     CountryNameEn: "Germany",
     CountryNameHe: "גרמניה",
     CityNameEn: "Cologne",
-    CityNameHe: "קלן"
+    CityNameHe: "קולן"
   },
   CBE: {
     CountryNameEn: "usa",

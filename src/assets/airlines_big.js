@@ -14607,12 +14607,12 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Canadian Western Airlines",
+    "name": "Deutsch Bahn Rail",
     "IATA": "W2",
-    "ICAO": "CWA",
-    "Country": "Canada",
-    "Active": "N",
-    "callsign": "CANADIAN WESTERN",
+    "ICAO": "",
+    "Country": "Germany",
+    "Active": "Y",
+    "callsign": "",
     "Alternative name": ""
   },
   {
@@ -53469,10 +53469,10 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Maastricht Airlines",
+    "name": "Deutsch Bahn Rail",
     "IATA": "W2",
     "ICAO": "",
-    "Country": "Netherlands",
+    "Country": "Germany",
     "Active": "Y",
     "callsign": "",
     "Alternative name": ""

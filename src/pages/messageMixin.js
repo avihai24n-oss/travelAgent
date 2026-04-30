@@ -3,6 +3,17 @@ import { airlines } from "src/assets/airlines_big.js";
 import index from "airportsjs";
 import { airports } from "src/assets/iata";
 
+// IATA codes that aren't in the airportsjs npm dataset (e.g. railway-station
+// codes used by airline PNRs like QKL = Köln Hbf) fall back to the local
+// iata.js so the rest of the parsing pipeline still works.
+function lookupAirport(code) {
+  const ext = index.lookupByIataCode(code);
+  if (ext) return ext;
+  const local = airports[code];
+  if (!local) return null;
+  return { city: local.CityNameEn, country: local.CountryNameEn, iata: code };
+}
+
 // destructuring to keep only what is needed
 
 const messageMixin = {
@@ -76,7 +87,10 @@ const messageMixin = {
     },
     isFlightLine(line) {
       if (!line) return false;
-      return /\b[A-Z]{2,3}\s*\d{1,4}\s+[A-Z]\s+\d{2}[A-Z]{3}/.test(line);
+      // Carrier code can be alphanumeric (W2, U2, 9W, 4U, …) — match A–Z and 0–9
+      // in the 2–3 char carrier slot. Rest of the pattern (number, class letter,
+      // date) keeps the line specific enough that non-flight rows don't slip in.
+      return /\b[A-Z0-9]{2,3}\s*\d{1,4}\s+[A-Z]\s+\d{2}[A-Z]{3}/.test(line);
     },
     getAmadeusTranslate(linesString) {
       if (linesString.length) {
@@ -262,8 +276,8 @@ const messageMixin = {
         line.flightNumber = `${splitedLine[1]}${splitedLine[2]}`;
         line.departAirportCode = splitedLine[6].slice(0, 3);
         line.destAirportCode = splitedLine[6].slice(3, 6);
-        const departInfo = index.lookupByIataCode(line.departAirportCode);
-        const destInfo = index.lookupByIataCode(line.destAirportCode);
+        const departInfo = lookupAirport(line.departAirportCode);
+        const destInfo = lookupAirport(line.destAirportCode);
         if (!departInfo || !destInfo) return null;
         line.departAirport = departInfo.city;
         line.destAirport = destInfo.city;
@@ -332,17 +346,16 @@ const messageMixin = {
       dayNumber = splitedLine[5];
       line.departAirportCode = splitedLine[6].slice(0, 3);
       line.destAirportCode = splitedLine[6].slice(3, 6);
-      this.data.journey.push(
-        index.lookupByIataCode(line.departAirportCode).city
-      );
-      this.data.journey.push(index.lookupByIataCode(line.destAirportCode).city);
+      const departInfoLegacy = lookupAirport(line.departAirportCode);
+      const destInfoLegacy = lookupAirport(line.destAirportCode);
+      if (!departInfoLegacy || !destInfoLegacy) return;
+      this.data.journey.push(departInfoLegacy.city);
+      this.data.journey.push(destInfoLegacy.city);
       if (!this.data.journeyCodes) this.data.journeyCodes = {};
-      this.data.journeyCodes[index.lookupByIataCode(line.departAirportCode).city] = line.departAirportCode;
-      this.data.journeyCodes[index.lookupByIataCode(line.destAirportCode).city] = line.destAirportCode;
-      line.departAirport = `${
-        index.lookupByIataCode(line.departAirportCode).city
-      }`;
-      line.destAirport = `${index.lookupByIataCode(line.destAirportCode).city}`;
+      this.data.journeyCodes[departInfoLegacy.city] = line.departAirportCode;
+      this.data.journeyCodes[destInfoLegacy.city] = line.destAirportCode;
+      line.departAirport = `${departInfoLegacy.city}`;
+      line.destAirport = `${destInfoLegacy.city}`;
       line.departTime = `${splitedLine[8].slice(0, 2)}:${splitedLine[8].slice(
         2,
         4
