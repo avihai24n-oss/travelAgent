@@ -370,6 +370,18 @@
           <span>WhatsApp Message Preview</span>
         </div>
         <div class="section-body">
+          <button
+            v-if="selectedLang === 'en'"
+            type="button"
+            class="multi-fare-toggle"
+            :class="{ active: useMultiFareMode }"
+            @click="onToggleMultiFare"
+          >
+            <span class="multi-fare-toggle-icon">{{ useMultiFareMode ? '✓' : '🎫' }}</span>
+            <span class="multi-fare-toggle-label">
+              {{ useMultiFareMode ? 'Standard quote' : 'Multi-fare quote (OPTIMA / COMFORT / FLEX)' }}
+            </span>
+          </button>
           <WhatsAppPhonePreview
             :text="whatsappMessage"
             :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
@@ -480,7 +492,7 @@ import {
 import messageMixin from "./messageMixin";
 import { LocalStorage } from "quasar";
 import { airports } from "src/assets/iata";
-import { loadTemplate, FLIGHT_ITEM_KEYS } from "src/assets/defaultTemplates.js";
+import { loadTemplate, FLIGHT_ITEM_KEYS, MULTI_FARE_TEMPLATES } from "src/assets/defaultTemplates.js";
 import { flagFromCountry } from "src/assets/countryFlag.js";
 import {
   parseAmadeusNames,
@@ -523,7 +535,8 @@ export default {
       previewTxt: "",
       whatsappMessage: "",
       darkMode: false,
-      ticketIssuanceDeadline: ""
+      ticketIssuanceDeadline: "",
+      useMultiFareMode: false
     };
   },
   created() {
@@ -673,6 +686,10 @@ export default {
         })
         .join("\n");
     },
+    onToggleMultiFare() {
+      this.useMultiFareMode = !this.useMultiFareMode;
+      this.onPreview();
+    },
     async onCopyMessage() {
       const text = this.whatsappMessage || "";
       if (!text) return;
@@ -767,7 +784,9 @@ export default {
     },
     buildFromCustomTemplate(flightsTxt) {
       const langKey = this.selectedLang;
-      const tpl = loadTemplate("flight", langKey);
+      const multiFareTpl =
+        this.useMultiFareMode && MULTI_FARE_TEMPLATES[langKey];
+      const tpl = multiFareTpl || loadTemplate("flight", langKey);
       if (!tpl) return "";
 
       const customerName = this.capitalizeFirstLetter(
@@ -1936,6 +1955,67 @@ body.body--dark .preview-textarea ::v-deep .q-field__native {
   border-radius: 10px;
   padding: 12px;
   font-weight: 600;
+}
+
+.multi-fare-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1.5px dashed #94a3b8;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  font-family: inherit;
+}
+
+.multi-fare-toggle:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+}
+
+.multi-fare-toggle:active {
+  transform: scale(0.99);
+}
+
+.multi-fare-toggle.active {
+  background: linear-gradient(180deg, #2563eb, #1d4ed8);
+  color: #fff;
+  border-style: solid;
+  border-color: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.multi-fare-toggle.active:hover {
+  background: linear-gradient(180deg, #1d4ed8, #1e40af);
+}
+
+.multi-fare-toggle-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.multi-fare-toggle-label {
+  flex: 1;
+  text-align: center;
+}
+
+body.body--dark .multi-fare-toggle {
+  background: #1e293b;
+  border-color: #475569;
+  color: #cbd5e1;
+}
+
+body.body--dark .multi-fare-toggle:hover {
+  background: #1e3a5f;
+  border-color: #3b82f6;
 }
 
 /* Destination picker dialog */

@@ -248,6 +248,133 @@ Cordialement
   }
 };
 
+// Multi-fare quote template — used by the toggle in the Preview area.
+// Same flight-block engine as DEFAULT_TEMPLATES.flight (identical itinerary
+// format kept verbatim from the regular template), but the single AIRFARE
+// section is replaced by three fare tiers (OPTIMA / COMFORT / FLEX). Manual-
+// fill fields (prices, change/cancel fees, passenger count) are literal ___
+// so the agent fills them in by editing the rendered message.
+// Currently EN only; he/fr to be added later — until then the toggle is hidden.
+export const MULTI_FARE_TEMPLATES = {
+  en: `*{{CUSTOMER_NAME}}*, Shalom!
+⏰ *Your tickets issuance approval❗*
+👉 *{{TICKET_ISSUANCE}}*
+
+In reply to your request, you'll find below my *Updated proposal* for your *(👤{{CUSTOMER_NAME}})* upcoming trip to *{{DESTINATION}}*
+{{ALL_NAMES}}
+
+Please reply directly to this WhatsApp message with:
+✅ Your approval to issue the *___ tickets*
+✅ Your selected fare option: 🟥 *OPTIMA* / 🟩 *COMFORT* / 🟦 *FLEX*
+
+*Itinerary 🌍*
+
+*{{FLIGHT_DIRECTION}}*
+{{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
+{{FLIGHT_ORIGIN_CITY}} ➡️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
+*Economy/Premium/Business Class*
+Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
+Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
+💺 Seat *XX*
+
+*{{FLIGHT_DIRECTION}}*
+{{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
+{{FLIGHT_ORIGIN_CITY}} ({{FLIGHT_ORIGIN_CODE}}) ➡️ {{FLIGHT_DEST_CITY}}
+*Economy/Premium/Business Class*
+Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
+Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
+💺 Seat *XX*
+
+*Airline:* ({{AIRLINE_CODE}}) ✈️
+*{{AIRLINE_NAME}}*
+
+*Compartment* 💺
+*{{CLASS}}*
+
+*AIRFARE OPTIONS* 🎫
+For the same itinerary above, you may choose one of the following *3 fare options*:
+
+-----------------------------
+
+🟥 *OPTIMA Rate* 🎫
+💳 *Price:*
+👉 *___ x ___ Adults*
+
+*Baggage Allowance* 🧳
+✅ 1 checked bag *23 kg*
+✅ 1 handbag *8 kg*
+
+*Preselected Seats* 💺
+❌ Not included
+*Seats can only be selected 24 hours before each flight* ❗
+
+*Ticket Restrictions* ⚠️
+▪️ Change: *___ p.p.*
+  *(+ fare difference, if applicable)*
+▪️ Cancellation: *Non-refundable* ❗
+▪️ No-show: *Total loss*
+
+-----------------------------
+
+🟩 *COMFORT Rate* 🎫
+💳 *Price:*
+👉 *___ x ___ Adults*
+
+*Baggage Allowance* 🧳
+✅ 1 checked bag *23 kg*
+✅ 1 handbag *8 kg*
+
+*Preselected Seats* 💺
+✅ Standard seats included
+
+*Ticket Restrictions* ⚠️
+▪️ Change: *___ p.p.*
+  *(+ fare difference, if applicable)*
+▪️ Cancellation: *___ p.p.*
+▪️ No-show: *Total loss*
+
+-----------------------------
+
+🟦 *FLEX Rate* 🎫
+💳 *Price:*
+👉 *___ x ___ Adults*
+
+*Baggage Allowance* 🧳
+✅ 1 checked bag *23 kg*
+✅ 1 handbag *8 kg*
+
+*Preselected Seats* 💺
+✅ Standard / preferred seats included
+
+*Ticket Restrictions* ⚠️
+▪️ Change: *___ p.p.*
+   *(+ fare difference, if applicable)*
+▪️ Cancellation: *___ p.p.*
+▪️ No-show: *Total loss*
+
+-----------------------------
+
+👉 *Please indicate your preferred fare option for each passenger.*
+
+*Important Notes* ❗
+▪️ Fares are subject to change without prior notice until tickets are issued.
+▪️ Seats, fares, and conditions are only guaranteed once tickets are issued.
+▪️ *p.p. = per person*
+
+⏱️ *Ticket issuance deadline*
+🟥 🟩 🟦
+👉 *{{TICKET_ISSUANCE}}*
+
+To proceed, please reply directly to this WhatsApp message with your *fare choice* and your *approval to issue the tickets*.
+
+Thanks,
+Gad Elnekave
+Sincerely Yours
+🏢 American Express Global Business Travel
+📞 Mob. 972-54-5727055
+✉️ gad@gbtil.co.il`
+};
+
 import {
   isSyncConfigured,
   fetchAllTemplatesRemote,
