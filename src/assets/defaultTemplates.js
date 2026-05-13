@@ -248,12 +248,105 @@ Cordialement
   }
 };
 
+import {
+  isSyncConfigured,
+  fetchAllTemplatesRemote,
+  upsertTemplateRemote,
+  deleteTemplateRemote,
+  fetchCustomCategoriesRemote,
+  upsertCustomCategoryRemote,
+  deleteCustomCategoryRemote
+} from "./templateSync.js";
+
 const storageKey = (category, lang) => `customTemplate:${category}:${lang}`;
 const historyKey = (category, lang) => `customTemplateHistory:${category}:${lang}`;
 const HISTORY_LIMIT = 20;
 const CUSTOM_CATEGORIES_KEY = "customCategories";
 
 export const BUILT_IN_CATEGORY_KEYS = CATEGORIES.map(c => c.key);
+
+// One-shot bootstrap: pull cloud state into localStorage on app start, then push
+// any local-only data up. Caller awaits this before reading templates so the UI
+// shows the latest content from any device.
+//
+// Conflict resolution: cloud wins on conflicts (we treat the cloud as the
+// source of truth). For Gad's setup this is fine — almost always one writer.
+//
+// Returns { ok, pulled, pushed, error } so the UI can show a sync indicator.
+export async function bootstrapTemplateSync() {
+  if (!isSyncConfigured()) {
+    return { ok: false, pulled: 0, pushed: 0, error: "not_configured" };
+  }
+  let pulled = 0;
+  let pushed = 0;
+  try {
+    const remoteTpls = await fetchAllTemplatesRemote();
+    for (const compoundKey of Object.keys(remoteTpls)) {
+      const sepIdx = compoundKey.lastIndexOf(":");
+      if (sepIdx === -1) continue;
+      const cat = compoundKey.slice(0, sepIdx);
+      const lang = compoundKey.slice(sepIdx + 1);
+      const remoteVal = remoteTpls[compoundKey].value;
+      try {
+        window.localStorage.setItem(storageKey(cat, lang), remoteVal);
+        pulled++;
+      } catch (e) { /* storage full / private mode — skip */ }
+    }
+
+    const remoteCats = await fetchCustomCategoriesRemote();
+    if (remoteCats.length) {
+      try {
+        window.localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(remoteCats));
+        pulled += remoteCats.length;
+      } catch (e) { /* skip */ }
+    }
+
+    // Push: any local key not present remotely → upload it.
+    const remoteKeys = new Set(Object.keys(remoteTpls));
+    try {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (!k || k.indexOf("customTemplate:") !== 0) continue;
+        const rest = k.slice("customTemplate:".length);
+        if (remoteKeys.has(rest)) continue;
+        const sepIdx = rest.lastIndexOf(":");
+        if (sepIdx === -1) continue;
+        const cat = rest.slice(0, sepIdx);
+        const lang = rest.slice(sepIdx + 1);
+        const value = window.localStorage.getItem(k);
+        if (typeof value !== "string") continue;
+        try {
+          await upsertTemplateRemote(cat, lang, value);
+          pushed++;
+        } catch (e) { /* skip — best effort */ }
+      }
+    } catch (e) { /* iterate failure — skip */ }
+
+    const remoteCatKeys = new Set(remoteCats.map(c => c.key));
+    const localCats = loadCustomCategories();
+    for (const cat of localCats) {
+      if (remoteCatKeys.has(cat.key)) continue;
+      try {
+        await upsertCustomCategoryRemote(cat);
+        pushed++;
+      } catch (e) { /* skip */ }
+    }
+
+    return { ok: true, pulled, pushed, error: null };
+  } catch (err) {
+    return { ok: false, pulled, pushed, error: String(err && err.message || err) };
+  }
+}
+
+// Fire-and-forget helper — invoked from save paths. Errors are swallowed and
+// logged to console; the local copy is the source of truth until next bootstrap.
+function pushSafely(promise) {
+  if (!promise || typeof promise.then !== "function") return;
+  promise.catch(err => {
+    // eslint-disable-next-line no-console
+    console.warn("template sync push failed:", err && err.message || err);
+  });
+}
 
 export function loadCustomCategories() {
   try {
@@ -281,9 +374,11 @@ export function addCustomCategory(label) {
   if (!name) return null;
   const key = "custom_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const arr = loadCustomCategories();
-  arr.push({ key, label: { he: name, en: name, fr: name } });
+  const created = { key, label: { he: name, en: name, fr: name } };
+  arr.push(created);
   saveCustomCategories(arr);
-  return { key, label: { he: name, en: name, fr: name } };
+  pushSafely(upsertCustomCategoryRemote(created));
+  return created;
 }
 
 export function renameCustomCategory(key, label) {
@@ -294,6 +389,7 @@ export function renameCustomCategory(key, label) {
   if (!cat) return false;
   cat.label = { he: name, en: name, fr: name };
   saveCustomCategories(arr);
+  pushSafely(upsertCustomCategoryRemote(cat));
   return true;
 }
 
@@ -306,10 +402,12 @@ export function deleteCustomCategory(key) {
     for (const lang of LANGUAGES.map(l => l.key)) {
       window.localStorage.removeItem(storageKey(key, lang));
       window.localStorage.removeItem(historyKey(key, lang));
+      pushSafely(deleteTemplateRemote(key, lang));
     }
   } catch (e) {
     // ignore
   }
+  pushSafely(deleteCustomCategoryRemote(key));
   return true;
 }
 
@@ -330,6 +428,7 @@ export function saveTemplate(category, lang, value) {
       pushHistory(category, lang, prev);
     }
     window.localStorage.setItem(storageKey(category, lang), value);
+    pushSafely(upsertTemplateRemote(category, lang, value));
     return true;
   } catch (e) {
     return false;
@@ -341,6 +440,7 @@ export function resetTemplate(category, lang) {
     const prev = window.localStorage.getItem(storageKey(category, lang));
     if (prev !== null) pushHistory(category, lang, prev);
     window.localStorage.removeItem(storageKey(category, lang));
+    pushSafely(deleteTemplateRemote(category, lang));
     return true;
   } catch (e) {
     return false;
